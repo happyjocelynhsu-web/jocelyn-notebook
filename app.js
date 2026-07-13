@@ -30,10 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
   const route = getRoute();
   
-  // Check URL parameters for full-book read-only mode
+  // Default to read-only mode, UNLESS ?edit=true or ?mode=edit is specified in the URL
   const urlParams = new URLSearchParams(window.location.search);
-  const isReadMode = urlParams.get('read') === 'true' || urlParams.get('mode') === 'read';
-  if (isReadMode) {
+  const isEditMode = urlParams.get('edit') === 'true' || urlParams.get('mode') === 'edit';
+  
+  if (!isEditMode) {
     document.body.classList.add('readonly-mode');
   }
   
@@ -42,7 +43,7 @@ async function initApp() {
     document.body.classList.add('readonly-mode');
     await renderSharedPage(route.id);
   } else {
-    // 2. Main Editor mode (will automatically run in read-only mode if the body has class 'readonly-mode')
+    // 2. Main Book mode (run in read-only or edit mode depending on 'readonly-mode' class on body)
     initEditor();
   }
 }
