@@ -1,0 +1,2386 @@
+/* --- Global Design System --- */
+:root {
+  --color-bg-desk: #121316; /* Dark elegant desk surface */
+  --color-paper: #fbfaf5;    /* Warm beige paper tone */
+  --color-paper-shadow: rgba(0, 0, 0, 0.15);
+  --color-primary: #8b5cf6;  /* Premium purple accent */
+  --color-primary-hover: #7c3aed;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-text-dark: #1f2937;
+  --color-text-light: #f3f4f6;
+  --color-panel-bg: rgba(30, 30, 35, 0.75);
+  --color-panel-border: rgba(255, 255, 255, 0.08);
+  --font-ui: 'Inter', 'Noto Sans TC', sans-serif;
+  --font-book: 'Playfair Display', 'Klee One', serif;
+  
+  --book-width: 1040px;
+  --book-height: 650px;
+  --page-width: calc(var(--book-width) / 2);
+  --page-height: var(--book-height);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--color-bg-desk);
+  color: var(--color-text-light);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* --- App Header --- */
+.app-header {
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-panel-border);
+  background: rgba(18, 19, 22, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--color-primary);
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+}
+
+.logo-text h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.logo-text span {
+  font-size: 11px;
+  color: #9ca3af;
+  display: block;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --- Status Button --- */
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-btn i {
+  width: 15px;
+  height: 15px;
+}
+
+.status-btn.offline {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.status-btn.offline:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.status-btn.online {
+  background: rgba(16, 185, 129, 0.1);
+  color: #a7f3d0;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.status-btn.online:hover {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-panel-border);
+  color: var(--color-text-light);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.icon-btn i {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Main Workspace Layout --- */
+.workspace {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* --- Left Sidebar: Tools Panel --- */
+.tools-panel {
+  width: 280px;
+  height: calc(100vh - 64px); /* Constrain height to trigger vertical scrollbar */
+  box-sizing: border-box;
+  border-right: 1px solid var(--color-panel-border);
+  background: var(--color-panel-bg);
+  backdrop-filter: blur(16px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  z-index: 200; /* Sit above all book pages, sheets, and drawing layers on desktop / large iPad */
+  transition: transform 0.3s ease;
+  overflow-y: auto; /* Enable vertical scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth inertia scrolling on iPad */
+}
+
+.tools-panel.hidden {
+  transform: translateX(-100%);
+  position: absolute;
+}
+
+.tool-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tool-section h3 i {
+  width: 15px;
+  height: 15px;
+}
+
+.tool-group {
+  display: flex;
+  gap: 8px;
+}
+
+.tool-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9ca3af;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-btn i {
+  width: 16px;
+  height: 16px;
+}
+
+.tool-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-light);
+}
+
+.tool-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Color Palette */
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.color-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.active {
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+/* Brush Size Input */
+.brush-size-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#brush-size {
+  flex: 1;
+  accent-color: var(--color-primary);
+  height: 4px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+#brush-size-val {
+  font-size: 13px;
+  font-weight: 600;
+  width: 42px;
+  text-align: right;
+  color: #d1d5db;
+}
+
+/* Action Button */
+.action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.action-btn.danger:hover {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.action-btn.primary {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.action-btn.primary:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.action-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d1d5db;
+  border-color: var(--color-panel-border);
+}
+
+.action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.action-btn.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  width: auto;
+}
+
+.spacer {
+  margin-top: auto;
+}
+
+/* Share Box Toggle Switch */
+.share-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--color-panel-border);
+  padding: 14px;
+  border-radius: 12px;
+}
+
+.share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.share-header h3 {
+  margin-bottom: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+  background-color: var(--color-primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.share-url-container {
+  margin-top: 14px;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.share-info {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.url-input-group {
+  display: flex;
+  gap: 6px;
+}
+
+.url-input-group input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-panel-border);
+  color: #9ca3af;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.url-input-group .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+}
+
+/* --- Center Stage & Viewport --- */
+.book-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  overflow: hidden; /* Prevent horizontal scrollbar on iPad Safari from unscaled layout elements */
+}
+
+.book-viewport {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* Relative for absolute positioning of nav-arrows */
+}
+
+/* Nav Arrows */
+.nav-arrow {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-panel-border);
+  color: #d1d5db;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 99;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+#prev-page-btn {
+  left: -64px;
+}
+
+#next-page-btn {
+  right: -64px;
+}
+
+@media (max-width: 1240px) {
+  #prev-page-btn {
+    left: 10px;
+    background: rgba(18, 19, 22, 0.6); /* Slightly more opaque background on smaller screens */
+    backdrop-filter: blur(4px);
+  }
+  #next-page-btn {
+    right: 10px;
+    background: rgba(18, 19, 22, 0.6);
+    backdrop-filter: blur(4px);
+  }
+}
+
+.nav-arrow:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.nav-arrow i {
+  width: 22px;
+  height: 22px;
+}
+
+.nav-arrow:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: var(--color-panel-border);
+}
+
+/* --- The Book --- */
+.notebook-container {
+  width: var(--book-width);
+  height: var(--book-height);
+  position: relative;
+  perspective: 1600px;
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease;
+  user-select: none;
+}
+
+/* Spine Shadow Overlay in the Middle */
+.notebook-spine {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 12px;
+  height: 100%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.18) 0%,
+    rgba(0, 0, 0, 0.05) 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(0, 0, 0, 0.05) 70%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  border-right: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.pages-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+/* Sheet Structure (Double page folded sheet) */
+.sheet {
+  position: absolute;
+  top: 0;
+  left: 50%; /* Left aligned to spine */
+  width: var(--page-width);
+  height: var(--book-height);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: auto;
+}
+
+/* Page Sides (Front and Back) */
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  background-color: var(--color-paper);
+  color: var(--color-text-dark);
+  box-shadow: 
+    inset -10px 0 30px rgba(0, 0, 0, 0.03),
+    0 10px 25px var(--color-paper-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Page Back Side starts rotated */
+.page.back {
+  transform: rotateY(180deg);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  box-shadow: 
+    inset 10px 0 30px rgba(0, 0, 0, 0.03),
+    0 10px 25px var(--color-paper-shadow);
+}
+
+/* Chrome 3D z-fighting workaround: hide facing-away pages explicitly */
+.sheet:not(.flipped) .page.back {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+.sheet:not(.flipped) .page.front {
+  visibility: visible !important;
+}
+
+.sheet.flipped .page.front {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+.sheet.flipped .page.back {
+  visibility: visible !important;
+}
+
+/* --- Hand-drawn Spring Cover Theme --- */
+.page.cover-front {
+  background: url('landmark_cover_front.jpg') no-repeat center center;
+  background-size: cover;
+  color: #333333;
+  border-radius: 12px 16px 16px 12px;
+  box-shadow: 
+    inset -15px 0 35px rgba(0, 0, 0, 0.15),
+    -10px 15px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.page.cover-front:after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border: 1px solid rgba(224, 94, 131, 0.15);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.page.cover-back {
+  background: url('landmark_cover_back.jpg') no-repeat center center;
+  background-size: cover;
+  color: #333333;
+  border-radius: 16px 12px 12px 16px;
+  box-shadow: 
+    inset 15px 0 35px rgba(0, 0, 0, 0.15),
+    10px 15px 30px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.page.cover-back:after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border: 1px solid rgba(75, 106, 90, 0.2);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.cover-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.cover-title {
+  font-family: var(--font-book);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1.4;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  margin-bottom: 24px;
+}
+
+.cover-subtitle {
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: rgba(247, 231, 196, 0.7);
+  text-transform: uppercase;
+}
+
+.cover-badge {
+  margin-top: auto;
+  border: 1px solid rgba(247, 231, 196, 0.3);
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Paper Texture Overlays */
+.paper-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 40px;
+  position: relative;
+  height: 100%;
+  pointer-events: auto;
+}
+
+/* Noise texture using SVG Data URI */
+.paper-inner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Grid lines for notebook paper */
+.paper-inner::after {
+  content: "";
+  position: absolute;
+  top: 30px;
+  left: 40px;
+  right: 40px;
+  bottom: 60px;
+  opacity: 0.25;
+  background-size: 100% 28px;
+  background-image: linear-gradient(rgba(0, 102, 204, 0.15) 1px, transparent 1px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Margins on inner binding pages */
+.page.front .paper-inner {
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.page.back .paper-inner {
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.page-header {
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  font-family: var(--font-ui);
+  z-index: 5;
+}
+
+.page-body-container {
+  flex: 1;
+  position: relative;
+  z-index: 5;
+}
+
+.page-footer {
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.04);
+  margin-top: auto;
+  font-family: var(--font-ui);
+  z-index: 5;
+}
+
+/* --- The Drawing and Text Layers --- */
+
+/* Drawing Layer (Canvas) */
+.drawing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15;
+  cursor: crosshair;
+  touch-action: none; /* Crucial: Prevent touch scroll/gestures when drawing */
+}
+
+/* Text Overlay Layer */
+.text-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Text block styles */
+.text-block {
+  position: absolute;
+  min-width: 80px;
+  max-width: calc(100% - 20px);
+  background: transparent;
+  border: 1px dashed transparent;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: move;
+  transition: border-color 0.15s ease;
+  z-index: 20;
+}
+
+.text-block:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.text-block.editing {
+  border-color: var(--color-primary);
+  background: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  z-index: 25;
+}
+
+.text-block-editor {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-book);
+  font-size: 16px;
+  color: #2c3e50;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  display: block;
+}
+
+.text-block-view {
+  font-family: var(--font-book);
+  font-size: 16px;
+  color: #2c3e50;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Text Block Delete Trigger */
+.text-block .delete-trigger {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--color-danger);
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.text-block:hover .delete-trigger {
+  display: flex;
+}
+
+.text-block.editing .delete-trigger {
+  display: none;
+}
+
+/* --- Media Blocks & Resizing --- */
+.text-block.media-block {
+  min-width: 50px;
+  padding: 0;
+  touch-action: none !important;
+}
+
+.text-block.media-block img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+  -webkit-user-drag: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none; /* Pass events to block wrapper for dragging */
+}
+
+.text-block.media-block video {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+  background: #000;
+  touch-action: none !important;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--color-primary);
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: se-resize;
+  display: none;
+  z-index: 30;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  touch-action: none !important;
+}
+
+/* Show resize handle on hover (for desktop) and always in Text mode */
+.text-block.media-block:hover .resize-handle,
+.mode-text .text-block.media-block .resize-handle {
+  display: block;
+}
+
+.readonly-mode .resize-handle {
+  display: none !important;
+}
+
+/* --- Book Footer Indicator --- */
+.book-footer {
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+  letter-spacing: 1px;
+}
+
+/* --- Modals Overlay --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: #1e1e24;
+  border: 1px solid var(--color-panel-border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 580px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-panel-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h2 i {
+  color: var(--color-primary);
+}
+
+.close-modal-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  color: white;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #d1d5db;
+  margin-bottom: 6px;
+}
+
+.form-group input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-panel-border);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--color-primary);
+}
+
+.setup-tutorial {
+  margin-top: 24px;
+  border-top: 1px dashed var(--color-panel-border);
+  padding-top: 20px;
+}
+
+.setup-tutorial h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.setup-tutorial ol {
+  font-size: 13px;
+  color: #9ca3af;
+  padding-left: 20px;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.setup-tutorial li a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.setup-tutorial li a:hover {
+  text-decoration: underline;
+}
+
+.sql-code-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  position: relative;
+  margin-top: 10px;
+}
+
+.sql-code-block pre {
+  font-family: monospace;
+  font-size: 11px;
+  color: #a7f3d0;
+  overflow-x: auto;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.form-actions {
+  display: flex;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.flex-spacer {
+  flex: 1;
+}
+
+/* Help Modal Stylings */
+.help-section {
+  margin-bottom: 20px;
+}
+
+.help-section h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.help-section ul {
+  padding-left: 20px;
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.7;
+}
+
+.help-section li {
+  margin-bottom: 6px;
+}
+
+/* --- Shared Read-Only View Special Styles --- */
+.readonly-mode .tools-panel {
+  display: none !important;
+}
+
+.readonly-mode .app-header {
+  justify-content: center;
+}
+
+.readonly-mode .status-btn {
+  display: none !important;
+}
+
+.readonly-mode .drawing-canvas {
+  cursor: default;
+}
+
+.readonly-mode .text-block {
+  cursor: default;
+  border: none !important;
+}
+
+.readonly-mode .text-block:hover {
+  border: none;
+}
+
+.readonly-mode .delete-trigger {
+  display: none !important;
+}
+
+/* Empty Page / Private Page Cover UI */
+.private-cover {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  background: var(--color-paper);
+}
+
+.private-cover i {
+  color: var(--color-danger);
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.2));
+}
+
+.private-cover h2 {
+  font-family: var(--font-book);
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: var(--color-text-dark);
+}
+
+.private-cover p {
+  color: #6b7280;
+  max-width: 320px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .tools-panel {
+    position: absolute;
+    left: 0;
+    top: 64px;
+    height: calc(100vh - 64px);
+    box-shadow: 10px 0 20px rgba(0,0,0,0.3);
+    transform: translateX(-100%);
+    z-index: 9999 !important; /* Force sidebar overlay on top of 3D canvas and navigation arrows */
+  }
+  
+  .tools-panel.active {
+    transform: translateX(0);
+  }
+  
+  .book-stage {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .book-viewport {
+    gap: 10px;
+  }
+  .nav-arrow {
+    width: 38px;
+    height: 38px;
+  }
+  .nav-arrow i {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spinning-icon {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+/* --- Operation Modes Pointer-Events --- */
+/* Default / Browse Mode: disable all overlays so swipe gestures can reach the page sheet */
+.mode-browse .drawing-canvas {
+  pointer-events: none !important;
+}
+.mode-browse .text-layer {
+  pointer-events: none !important;
+}
+.mode-browse .text-block {
+  pointer-events: none !important;
+}
+
+/* Text Mode: enable text layer, disable drawing canvas */
+.mode-text .drawing-canvas {
+  pointer-events: none !important;
+}
+.mode-text .text-layer {
+  pointer-events: auto !important;
+}
+.mode-text .text-block {
+  pointer-events: auto !important;
+}
+
+/* Draw Mode: enable drawing canvas, disable text layer entirely */
+.mode-draw .drawing-canvas {
+  pointer-events: auto !important;
+}
+.mode-draw .text-layer {
+  pointer-events: none !important;
+}
+.mode-draw .text-block {
+  pointer-events: none !important;
+}
+
+/* --- Floating Rich-Text Toolbar & Link Styles --- */
+.rich-text-toolbar {
+  position: absolute;
+  top: -46px;
+  left: 0;
+  background: #1e1e24;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: auto !important; /* Always clickable! */
+}
+
+.rich-text-toolbar select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+}
+
+.rich-text-toolbar select option {
+  background: #1e1e24;
+  color: white;
+}
+
+.rich-text-toolbar button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.rich-text-toolbar button:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.rich-text-toolbar .done-btn {
+  background: var(--color-primary);
+  width: auto;
+  padding: 0 8px;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.rich-text-toolbar .done-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.text-block-view a {
+  color: var(--color-primary) !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.text-block-view a:hover {
+  color: var(--color-primary-hover) !important;
+}
+
+/* Sidebar Toggle Menu Button in Header */
+.sidebar-toggle {
+  display: none !important;
+}
+
+.sidebar-toggle-floating {
+  display: none !important;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--color-panel-border);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  .sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-toggle-floating {
+    display: flex !important;
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 64px;
+    background: var(--color-primary);
+    border: 1px solid var(--color-panel-border);
+    border-left: none;
+    border-radius: 0 12px 12px 0;
+    color: white;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1001; /* Sit above header and sidebar */
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sidebar-toggle-floating:hover {
+    background: var(--color-primary-hover);
+  }
+}
+
+/* --- User Select / Selection Prevention for smooth iPad pencil/draw experience --- */
+.drawing-canvas {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.page {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.notebook-container {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Ensure editable text area remains selectable for editing */
+.text-block-view {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* --- Layout Buttons in Sidebar --- */
+.layout-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #9ca3af !important;
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.layout-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+}
+
+.layout-btn.active {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* --- Single Page Mode flat override --- */
+.single-page-mode .notebook-container {
+  width: calc(var(--book-width) / 2) !important;
+  max-width: 520px !important;
+  perspective: none !important;
+  transform-style: flat !important;
+}
+
+.single-page-mode .sheet {
+  transform: none !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-shadow: none !important;
+  z-index: 1 !important;
+  position: absolute !important;
+  transform-style: flat !important;
+  pointer-events: none !important; /* Disable hitboxes on inactive sheets */
+}
+
+.single-page-mode .sheet:has(.active-page) {
+  pointer-events: auto !important; /* Only let active sheet handle interactions */
+  z-index: 10 !important;
+}
+
+.single-page-mode .notebook-spine {
+  display: none !important;
+}
+
+.single-page-mode .sheet .page,
+.single-page-mode .sheet:not(.flipped) .page.back,
+.single-page-mode .sheet.flipped .page.front {
+  display: none !important; /* Hide by default */
+  visibility: visible !important; /* Override 3D flipped/unflipped visibility hidden rules! */
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  width: 100% !important;
+  height: 100% !important;
+  left: 0 !important;
+  position: absolute !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+
+.single-page-mode .sheet .page.active-page,
+.single-page-mode .sheet:not(.flipped) .page.back.active-page,
+.single-page-mode .sheet.flipped .page.front.active-page {
+  display: flex !important; /* Only show active page */
+  visibility: visible !important;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Drag & Drop Overlay Feedback */
+.workspace.drag-active {
+  box-shadow: inset 0 0 0 4px var(--color-primary) !important;
+  background: rgba(139, 92, 246, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+
+/* --- Table of Contents (TOC) Grid & Cards --- */
+.toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 10px 4px;
+}
+
+/* Beautiful mini notebook page card! */
+.toc-card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 12px;
+  aspect-ratio: 3 / 4;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  color: #121316; /* Warm dark text inside page */
+}
+
+/* Notebook binding line on the left side of the mini card to look like a real notebook page! */
+.toc-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: rgba(139, 92, 246, 0.15); /* Purple binding strip */
+  border-right: 1px dashed rgba(139, 92, 246, 0.3);
+}
+
+.toc-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-primary);
+  box-shadow: 0 12px 24px rgba(139, 92, 246, 0.15);
+}
+
+/* Styling for the active page card */
+.toc-card.active {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px var(--color-primary), 0 12px 24px rgba(139, 92, 246, 0.2);
+}
+
+.toc-card-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toc-card-title {
+  font-family: var(--font-book);
+  font-weight: 700;
+  font-size: 16px;
+  color: #1f2937;
+  margin-top: 12px;
+  line-height: 1.4;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.toc-card-footer {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Badge for currently active page */
+.toc-card-badge {
+  background: var(--color-primary);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* --- Selection Marquee / Lasso Bounding Box --- */
+/* The freeform selection trail */
+.lasso-trail {
+  stroke-dasharray: 4;
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+
+/* Bounding Box on canvas */
+.selection-box {
+  position: absolute;
+  border: 1.5px dashed var(--color-primary);
+  background: rgba(139, 92, 246, 0.05);
+  box-sizing: border-box;
+  pointer-events: auto;
+  cursor: move;
+  z-index: 100;
+}
+
+/* Bounding box transform handles */
+.selection-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  box-sizing: border-box;
+  z-index: 101;
+}
+
+/* Corner scale handles */
+.selection-handle.se {
+  right: -5px;
+  bottom: -5px;
+  cursor: se-resize;
+}
+
+.selection-handle.nw {
+  left: -5px;
+  top: -5px;
+  cursor: nw-resize;
+}
+
+/* Top rotation handle */
+.selection-handle.rotate {
+  left: 50%;
+  top: -24px;
+  transform: translateX(-50%);
+  cursor: grab;
+  background: var(--color-primary);
+  border-color: white;
+}
+
+/* The vertical stem connecting rotation handle to bounding box */
+.selection-handle.rotate::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: -16px;
+  width: 1.5px;
+  background: var(--color-primary);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Selected block style */
+.selected-by-lasso {
+  outline: 2px dashed var(--color-primary) !important;
+  outline-offset: 4px;
+}
+
+/* Block iOS rubber-banding and scroll slide on draw mode */
+body.mode-draw {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none !important;
+}
+
+body.mode-draw .workspace {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* --- Floating Quick Toolbar --- */
+.quick-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: none !important; /* Hide by default on desktop/laptop and landscape layouts */
+  align-items: center;
+  gap: 12px;
+  background: rgba(18, 19, 22, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+  padding: 6px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.quick-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.quick-btn.active {
+  background: var(--color-primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.quick-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.quick-color-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.quick-color-dot:hover {
+  transform: scale(1.1);
+}
+
+.quick-color-dot.active {
+  transform: scale(1.2);
+  border-color: white !important;
+}
+
+/* On smaller mobile widths, make quick toolbar scale down slightly */
+@media (max-width: 600px) {
+  .quick-toolbar {
+    padding: 4px 10px;
+    gap: 8px;
+    top: 8px;
+    max-width: 95%;
+    overflow-x: auto;
+  }
+  .quick-btn {
+    width: 30px;
+    height: 30px;
+  }
+  .quick-color-dot {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Only show quick toolbar on portrait tablets and mobile screens (width <= 1024px) in editing modes */
+@media (max-width: 1024px) and (orientation: portrait) {
+  body.mode-draw .quick-toolbar,
+  body.mode-text .quick-toolbar {
+    display: flex !important;
+  }
+}
+
+/* --- Floating Layers Panel --- */
+.quick-layers-panel {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  background: rgba(18, 19, 22, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-layers-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.quick-layers-panel h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #e5e7eb;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.quick-panel-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.quick-panel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.layer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layer-item.active {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.layer-name {
+  font-size: 12px;
+  color: #9ca3af;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 8px;
+  text-align: left;
+}
+
+.layer-item.active .layer-name {
+  color: white;
+  font-weight: 500;
+}
+
+.layer-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.layer-action-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.layer-action-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layer-action-btn.active {
+  color: var(--color-primary) !important;
+}
+
+/* --- Autodesk Sketchbook Inspired Floating UI Panels --- */
+.sketchbook-panel {
+  position: absolute;
+  background: rgba(18, 19, 22, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  z-index: 500;
+  display: flex;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Left Panel: Tools & Operations */
+.left-panel {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Right Panel: Layer Editor Strip */
+.right-panel {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  padding: 12px 8px;
+  gap: 8px;
+  align-items: center;
+  width: 56px;
+}
+
+/* Bottom Panel: Color Palette & Selection Actions */
+.bottom-panel {
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+  padding: 8px 16px;
+  gap: 12px;
+  align-items: center;
+  border-radius: 30px;
+}
+
+/* Common button in panels */
+.sk-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sk-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+}
+
+.sk-btn.active {
+  background: var(--color-primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.sk-btn.primary-color {
+  color: var(--color-primary);
+}
+
+.sk-divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.left-panel .sk-divider,
+.right-panel .sk-divider {
+  width: 24px;
+  height: 1px;
+}
+
+.bottom-panel .sk-divider {
+  width: 1px;
+  height: 24px;
+}
+
+/* Panel Sections */
+.panel-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Brush size presets in left panel */
+.sizes-section {
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.sk-size-dot {
+  background: #9ca3af;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.sk-size-dot:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+.sk-size-dot.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+/* Colors strip in bottom panel */
+.sk-colors-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sk-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.sk-color-dot:hover {
+  transform: scale(1.1);
+}
+
+.sk-color-dot.active {
+  transform: scale(1.2);
+  border-color: white !important;
+}
+
+/* More Actions Dropdown Menu */
+.sk-menu-dropdown {
+  position: absolute;
+  left: 54px;
+  top: 0;
+  width: 180px;
+  background: rgba(22, 23, 26, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 650;
+}
+
+.sk-menu-item {
+  background: transparent;
+  border: none;
+  color: #d1d5db;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+  font-family: var(--font-ui);
+  width: 100%;
+}
+
+.sk-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.sk-menu-item i {
+  width: 15px;
+  height: 15px;
+}
+
+/* Layer Editor List inside Right Panel */
+.sk-layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.sk-layer-card {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sk-layer-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sk-layer-card.active {
+  border-color: var(--color-primary);
+  background: rgba(139, 92, 246, 0.15);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+}
+
+.sk-layer-label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sk-layer-card.active .sk-layer-label {
+  color: white;
+}
+
+/* Hover options popup on layer card */
+.sk-layer-options {
+  position: absolute;
+  right: 48px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(18, 19, 22, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  z-index: 550;
+  pointer-events: auto;
+}
+
+/* Hide old heavy sidebar & quick panels */
+.tools-panel,
+.quick-toolbar,
+.quick-layers-panel,
+.sidebar-toggle-floating {
+  display: none !important;
+}
+
+/* Ensure workspace occupies full width since sidebar is hidden */
+.workspace {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Hide header edit buttons and modes since they are duplicate */
+.header-actions .view-mode-selector {
+  display: none !important;
+}
+
+/* Make book viewport larger since sidebar is gone */
+.book-stage {
+  padding: 20px 80px !important;
+}
+
+/* Responsive Scaling for Sketchbook Panels on Small Screens */
+@media (max-width: 768px) {
+  .left-panel {
+    left: 8px;
+  }
+  .right-panel {
+    right: 8px;
+  }
+  .bottom-panel {
+    bottom: 12px;
+    padding: 6px 12px;
+  }
+  .sk-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .sk-color-dot {
+    width: 16px;
+    height: 16px;
+  }
+  .book-stage {
+    padding: 20px 48px !important;
+  }
+}
+
+/* --- Global Full-screen Pointer Input Overlay Canvas --- */
+.global-input-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 450; /* Sits directly overlaying the book stage, but below sketchbook panels (z-index 500) */
+  pointer-events: auto;
+  overflow: hidden;
+  touch-action: none !important;
+}
+
+#global-input-canvas {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  cursor: crosshair;
+  touch-action: none !important;
+}
+
+/* --- Sketchbook Floating Color Popover --- */
+.sk-color-popover {
+  position: absolute;
+  left: 54px;
+  top: 0;
+  width: 156px;
+  background: rgba(22, 23, 26, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 600;
+}
+
+.sk-colors-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  justify-items: center;
+}
+
+.sk-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.sk-color-dot:hover {
+  transform: scale(1.15);
+}
+
+.sk-color-dot.active {
+  border-color: white !important;
+  transform: scale(1.2);
+}
+
+/* --- Read-Only View Panel overrides --- */
+.readonly-mode .sketchbook-panel,
+.readonly-mode .app-header,
+.readonly-mode #global-input-container {
+  display: none !important;
+}
+
+.readonly-mode .book-stage {
+  padding-top: 40px !important;
+  height: 100vh !important;
+}
+
+/* Page Running Head Title Input Styling */
+.page-title-input:hover {
+  border-bottom-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+.page-title-input:focus {
+  border-bottom-color: var(--color-primary) !important;
+}
+
+.readonly-mode .page-title-input {
+  pointer-events: none !important;
+  border-bottom: none !important;
+  cursor: default !important;
+}
+
+
+

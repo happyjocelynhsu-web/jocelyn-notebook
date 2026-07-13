@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>反重力擬真翻書筆記本 - Antigravity Notebook</title>
+  
+  <!-- Global error catcher for debugging -->
+  <script>
+    window.addEventListener('error', function(e) {
+      const errDiv = document.createElement('div');
+      errDiv.style.position = 'fixed';
+      errDiv.style.top = '10px';
+      errDiv.style.left = '10px';
+      errDiv.style.right = '10px';
+      errDiv.style.backgroundColor = '#ef4444';
+      errDiv.style.color = '#ffffff';
+      errDiv.style.padding = '20px';
+      errDiv.style.zIndex = '999999';
+      errDiv.style.borderRadius = '8px';
+      errDiv.style.fontFamily = 'monospace';
+      errDiv.style.whiteSpace = 'pre-wrap';
+      errDiv.innerText = 'JS Error: ' + e.message + '\nAt: ' + e.filename + ':' + e.lineno + ':' + e.colno + '\nStack: ' + (e.error ? e.error.stack : 'N/A');
+      document.body.appendChild(errDiv);
+    });
+  </script>
+  
+  <!-- Google Fonts: Inter for UI, Playfair Display for Book titles, Noto Sans TC for Chinese text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Supabase JS Client Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <button id="sidebar-toggle-btn" class="sidebar-toggle" title="開啟工具列">
+      <i data-lucide="menu"></i>
+    </button>
+
+    <div class="header-logo">
+      <i data-lucide="book-open" class="logo-icon"></i>
+      <div class="logo-text">
+        <h1>Antigravity Notebook</h1>
+        <span>反重力擬真翻書筆記本</span>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <!-- Database Connection Status Badge -->
+      <button id="db-status-btn" class="status-btn offline">
+        <i data-lucide="cloud-off"></i>
+        <span>本地儲存模式</span>
+      </button>
+      
+      <!-- TOC Button -->
+      <button id="toc-btn" class="icon-btn" title="目錄總覽">
+        <i data-lucide="layers"></i>
+      </button>
+
+      <!-- Help Button -->
+      <button id="help-btn" class="icon-btn" title="使用說明">
+        <i data-lucide="help-circle"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="workspace">
+    <!-- Global full-screen pointer input capture layer -->
+    <div id="global-input-container" class="global-input-container" style="display: none;">
+      <canvas id="global-input-canvas"></canvas>
+    </div>
+    
+    <!-- Autodesk Sketchbook Left Tool Palette -->
+    <div id="left-tool-palette" class="sketchbook-panel left-panel">
+      <!-- Ellipsis Menu Button -->
+      <div class="panel-section">
+        <button id="sk-menu-btn" class="sk-btn" title="更多功能">
+          <i data-lucide="more-horizontal"></i>
+        </button>
+        <!-- Dropdown Menu -->
+        <div id="sk-menu-dropdown" class="sk-menu-dropdown" style="display: none;">
+          <button id="sk-action-upload" class="sk-menu-item"><i data-lucide="image"></i> 插入圖片/影片</button>
+          <button id="sk-action-clear" class="sk-menu-item" style="color: #ef4444;"><i data-lucide="trash-2"></i> 清除此頁</button>
+          <button id="sk-action-pdf" class="sk-menu-item"><i data-lucide="file-text"></i> 下載 PDF</button>
+          <button id="sk-action-share" class="sk-menu-item"><i data-lucide="share-2"></i> 分享此頁面</button>
+        </div>
+      </div>
+      <div class="sk-divider"></div>
+
+      <!-- Undo / Redo -->
+      <div class="panel-section">
+        <button id="sk-undo" class="sk-btn" title="復原 (Undo)">
+          <i data-lucide="undo"></i>
+        </button>
+        <button id="sk-redo" class="sk-btn" title="重做 (Redo)">
+          <i data-lucide="redo"></i>
+        </button>
+      </div>
+      <div class="sk-divider"></div>
+      
+      <!-- Operations -->
+      <div class="panel-section modes-section">
+        <button id="sk-tool-browse" class="sk-btn active" title="瀏覽">
+          <i data-lucide="hand"></i>
+        </button>
+        <button id="sk-tool-text" class="sk-btn" title="文字">
+          <i data-lucide="type"></i>
+        </button>
+        <button id="sk-tool-pen" class="sk-btn" title="畫筆">
+          <i data-lucide="pencil"></i>
+        </button>
+        <button id="sk-tool-eraser" class="sk-btn" title="橡皮擦">
+          <i data-lucide="eraser"></i>
+        </button>
+        <button id="sk-tool-lasso" class="sk-btn" title="智慧選取">
+          <i data-lucide="lasso"></i>
+        </button>
+        <button id="sk-tool-bucket" class="sk-btn" title="填滿">
+          <i data-lucide="paint-bucket"></i>
+        </button>
+      </div>
+      <div class="sk-divider"></div>
+
+      <!-- Color Selector Puck & Popover Panel -->
+      <div class="panel-section">
+        <button id="sk-active-color-btn" class="sk-btn" style="background-color: #1e1e1e; border: 2.5px solid rgba(255,255,255,0.25);" title="選擇顏色"></button>
+        
+        <!-- Floating Color Popover -->
+        <div id="sk-color-popover" class="sk-color-popover" style="display: none;">
+          <div class="sk-colors-grid">
+            <button class="sk-color-dot active" data-color="#1e1e1e" style="background-color: #1e1e1e;" title="黑色"></button>
+            <button class="sk-color-dot" data-color="#cc3333" style="background-color: #cc3333;" title="紅色"></button>
+            <button class="sk-color-dot" data-color="#0066cc" style="background-color: #0066cc;" title="藍色"></button>
+            <button class="sk-color-dot" data-color="#008844" style="background-color: #008844;" title="綠色"></button>
+            <button class="sk-color-dot" data-color="#8b5cf6" style="background-color: #8b5cf6;" title="紫色"></button>
+            <button class="sk-color-dot" data-color="#f97316" style="background-color: #f97316;" title="橘色"></button>
+            <button class="sk-color-dot" data-color="#ec4899" style="background-color: #ec4899;" title="粉色"></button>
+            <button class="sk-color-dot" data-color="#eab308" style="background-color: #eab308;" title="黃色"></button>
+            <button class="sk-color-dot" data-color="#06b6d4" style="background-color: #06b6d4;" title="青色"></button>
+            <button class="sk-color-dot" data-color="#7a7a7a" style="background-color: #7a7a7a;" title="灰色"></button>
+            <button class="sk-color-dot rainbow" id="sk-rainbow" style="background: linear-gradient(135deg, red, orange, yellow, green, blue, purple);" title="自訂顏色"></button>
+          </div>
+        </div>
+      </div>
+      <div class="sk-divider"></div>
+      
+      <!-- Brush Size Presets -->
+      <div class="panel-section sizes-section">
+        <button class="sk-size-dot" data-size="2" style="width: 8px; height: 8px;" title="細"></button>
+        <button class="sk-size-dot active" data-size="4" style="width: 14px; height: 14px;" title="中"></button>
+        <button class="sk-size-dot" data-size="8" style="width: 20px; height: 20px;" title="粗"></button>
+        <button class="sk-size-dot" data-size="16" style="width: 26px; height: 26px;" title="特粗"></button>
+      </div>
+      <div class="sk-divider"></div>
+
+      <!-- Contextual Fill Selection Button -->
+      <button id="sk-fill-selection" class="sk-btn primary-color" style="display: none;" title="填滿選區">
+        <i data-lucide="paint-bucket"></i>
+      </button>
+    </div>
+
+    <!-- Autodesk Sketchbook Right Layer Palette -->
+    <div id="right-layer-palette" class="sketchbook-panel right-panel">
+      <button id="sk-add-layer" class="sk-btn primary-color" title="新增圖層">
+        <i data-lucide="plus"></i>
+      </button>
+      <div class="sk-divider"></div>
+      <div id="sk-layers-container" class="sk-layers-list">
+        <!-- Dynamic list of layers -->
+      </div>
+    </div>
+    
+    <!-- Left Sidebar: Tools Panel (Hidden in shared read-only view) -->
+    <aside id="editor-tools" class="tools-panel">
+      <div class="tool-section">
+        <h3><i data-lucide="layout-grid"></i> 操作模式</h3>
+        <div class="tool-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <button id="tool-browse" class="tool-btn active" title="瀏覽與翻頁">
+            <i data-lucide="hand"></i>
+            <span>瀏覽</span>
+          </button>
+          <button id="tool-text" class="tool-btn" title="文字與媒體編輯">
+            <i data-lucide="type"></i>
+            <span>文字</span>
+          </button>
+          <button id="tool-pen" class="tool-btn" title="畫筆手繪">
+            <i data-lucide="pencil"></i>
+            <span>畫筆</span>
+          </button>
+          <button id="tool-eraser" class="tool-btn" title="橡皮擦擦除">
+            <i data-lucide="eraser"></i>
+            <span>橡皮擦</span>
+          </button>
+          <button id="tool-lasso" class="tool-btn" title="智慧選取">
+            <i data-lucide="lasso"></i>
+            <span>選取</span>
+          </button>
+          <button id="tool-bucket" class="tool-btn" title="色彩填滿">
+            <i data-lucide="paint-bucket"></i>
+            <span>填滿</span>
+          </button>
+        </div>
+        <button id="fill-selection-btn" class="action-btn secondary" style="width: 100%; margin-top: 8px; display: none; justify-content: center; gap: 8px;">
+          <i data-lucide="paint-bucket" style="color: var(--color-primary);"></i>
+          <span>填滿選取區域</span>
+        </button>
+      </div>
+      
+      <div class="tool-section">
+        <h3>畫筆顏色</h3>
+        <div class="color-palette">
+          <button class="color-dot active" data-color="#1e1e1e" style="background-color: #1e1e1e;"></button>
+          <button class="color-dot" data-color="#cc3333" style="background-color: #cc3333;"></button>
+          <button class="color-dot" data-color="#0066cc" style="background-color: #0066cc;"></button>
+          <button class="color-dot" data-color="#008844" style="background-color: #008844;"></button>
+          <button class="color-dot" data-color="#8b5cf6" style="background-color: #8b5cf6;"></button>
+          <button class="color-dot" data-color="#f97316" style="background-color: #f97316;"></button>
+          <button class="color-dot" data-color="#ec4899" style="background-color: #ec4899;"></button>
+          <button class="color-dot" data-color="#eab308" style="background-color: #eab308;"></button>
+          <button class="color-dot" data-color="#06b6d4" style="background-color: #06b6d4;"></button>
+          <button class="color-dot" data-color="#7a7a7a" style="background-color: #7a7a7a;"></button>
+        </div>
+      </div>
+      
+      <div class="tool-section">
+        <h3>畫筆粗細</h3>
+        <div class="brush-size-container">
+          <input type="range" id="brush-size" min="2" max="24" value="4">
+          <span id="brush-size-val">4px</span>
+        </div>
+      </div>
+      
+      <div class="tool-section">
+        <h3>畫筆防誤觸</h3>
+        <label class="toggle-control" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #9ca3af; padding: 4px 0;">
+          <input type="checkbox" id="pencil-only-toggle" style="accent-color: var(--color-primary); width: 16px; height: 16px;">
+          <span>僅限 Apple Pencil 繪圖</span>
+        </label>
+      </div>
+
+      <div class="tool-section">
+        <h3><i data-lucide="image"></i> 多媒體工具</h3>
+        <button id="upload-media-btn" class="action-btn secondary">
+          <i data-lucide="upload-cloud"></i>
+          <span>上傳圖片 / 影片</span>
+        </button>
+        <input type="file" id="media-file-input" accept="image/*,video/*" style="display: none;">
+      </div>
+
+      <div class="tool-section">
+        <h3>頁面動作</h3>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="add-page-btn" class="action-btn primary" style="width: 100%;">
+            <i data-lucide="plus-circle"></i>
+            <span>新增空白頁</span>
+          </button>
+          <button id="clear-page-btn" class="action-btn danger" style="width: 100%;">
+            <i data-lucide="trash-2"></i>
+            <span>清除目前頁面</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3><i data-lucide="layout"></i> 版面配置</h3>
+        <div style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-panel-border); padding: 8px 12px; border-radius: 8px;">
+          <button id="layout-double-btn" class="layout-btn active" title="雙頁書本">
+            <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
+            <span>雙頁書本</span>
+          </button>
+          <button id="layout-single-btn" class="layout-btn" title="單頁全螢幕">
+            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+            <span>單頁全螢幕</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="tool-section">
+        <h3><i data-lucide="zoom-in"></i> 視圖縮放</h3>
+        <div class="zoom-controls" style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-panel-border); padding: 8px 12px; border-radius: 8px; gap: 8px;">
+          <button id="zoom-out-btn" class="icon-btn" title="縮小" style="width: 32px; height: 32px; border-radius: 6px;"><i data-lucide="minus"></i></button>
+          <span id="zoom-level-val" style="font-size: 13px; font-weight: 600; color: #ffffff; min-width: 48px; text-align: center;">100%</span>
+          <button id="zoom-in-btn" class="icon-btn" title="放大" style="width: 32px; height: 32px; border-radius: 6px;"><i data-lucide="plus"></i></button>
+          <button id="zoom-reset-btn" class="icon-btn" title="重設" style="width: 32px; height: 32px; border-radius: 6px;"><i data-lucide="rotate-ccw"></i></button>
+        </div>
+      </div>
+
+
+      <div class="tool-section spacer"></div>
+
+      <!-- Sharing Switch -->
+      <div class="tool-section share-box">
+        <div class="share-header">
+          <h3><i data-lucide="share-2"></i> 公開分享此頁</h3>
+          <label class="toggle-switch">
+            <input type="checkbox" id="share-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="share-url-container" class="share-url-container hidden">
+          <p class="share-info">此頁面已公開，分享以下連結：</p>
+          <div class="url-input-group">
+            <input type="text" id="share-url-input" readonly value="">
+            <button id="copy-share-btn" class="icon-btn" title="複製連結">
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Floating Sidebar Toggle Handle for iPad/Mobile -->
+    <button id="sidebar-toggle-floating" class="sidebar-toggle-floating">
+      <i data-lucide="chevron-right"></i>
+    </button>
+
+    <!-- Center Stage: The Book Container -->
+    <section class="book-stage">
+      <div class="book-viewport">
+        <!-- Arrow Left -->
+        <button id="prev-page-btn" class="nav-arrow left" title="上一頁">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        
+        <!-- The Book -->
+        <div id="notebook" class="notebook-container">
+          <div class="notebook-spine"></div>
+          <div id="pages-container" class="pages-wrapper">
+            <!-- Sheets will be dynamically rendered here -->
+          </div>
+        </div>
+        
+        <!-- Arrow Right -->
+        <button id="next-page-btn" class="nav-arrow right" title="下一頁">
+          <i data-lucide="chevron-right"></i>
+        </button>
+      </div>
+      
+      <!-- Bottom Controls: Page Number Indicator -->
+      <div class="book-footer">
+        <span id="page-indicator">Cover</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal 1: Supabase Configuration -->
+  <div id="db-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i data-lucide="database"></i> 連接 Supabase 雲端同步</h2>
+        <button class="close-modal-btn" data-close="db-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>串接您的 Supabase 資料庫後，您就可以在電腦與 iPad 之間即時同步所有的手繪與文字！</p>
+        
+        <form id="db-config-form">
+          <div class="form-group">
+            <label for="sb-url">Supabase Project URL</label>
+            <input type="url" id="sb-url" placeholder="https://xxxxxxxxx.supabase.co" required>
+          </div>
+          <div class="form-group">
+            <label for="sb-key">Supabase Anon Key</label>
+            <input type="password" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+          </div>
+          
+          <div class="setup-tutorial">
+            <h4>💡 如何取得？</h4>
+            <ol>
+              <li>登入 <a href="https://supabase.com" target="_blank" rel="noopener">Supabase 官網</a> 並建立一個新專案。</li>
+              <li>在專案的 <strong>Project Settings > API</strong> 頁面找到 <code>Project URL</code> 與 <code>anon public</code> Key。</li>
+              <li>在專案的 <strong>SQL Editor</strong> 貼入以下 SQL 碼來建立資料表（點擊下方按鈕可複製 SQL）：</li>
+            </ol>
+            <div class="sql-code-block">
+              <pre id="sql-syntax">CREATE TABLE IF NOT EXISTS notebook_pages (
+  id TEXT PRIMARY KEY,
+  page_num INTEGER NOT NULL,
+  drawings JSONB DEFAULT '[]'::jsonb,
+  texts JSONB DEFAULT '[]'::jsonb,
+  is_shared BOOLEAN DEFAULT false,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 啟用即時同步 (Realtime)
+alter publication supabase_realtime add table notebook_pages;</pre>
+              <button type="button" id="copy-sql-btn" class="action-btn secondary btn-sm">
+                <i data-lucide="copy"></i> 複製 SQL 語法
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" id="disconnect-db-btn" class="action-btn danger hidden">斷開雲端連接</button>
+            <div class="flex-spacer"></div>
+            <button type="button" class="action-btn secondary" data-close="db-modal">取消</button>
+            <button type="submit" class="action-btn primary">儲存並連接</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Help / Guide -->
+  <div id="help-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📚 使用與手寫說明</h2>
+        <button class="close-modal-btn" data-close="help-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="help-section">
+          <h3>✍️ 雙層編輯系統</h3>
+          <ul>
+            <li><strong>手繪層（頂部）</strong>：可直接使用滑鼠、電繪板，或在 iPad 上使用 <strong>Apple Pencil</strong> 與手指直接於紙張上進行流暢繪圖或書寫。</li>
+            <li><strong>文字層（底部）</strong>：在紙張的<strong>任意空白處點擊</strong>，即可在該位置新增文字輸入框。輸入完成後，可任意拖曳其位置，或者雙擊該文字框將其刪除。</li>
+          </ul>
+        </div>
+        <div class="help-section">
+          <h3>📖 擬真翻頁</h3>
+          <ul>
+            <li>您可以使用左右導覽按鈕翻頁，或直接在書本邊角<strong>點擊並拖曳</strong>，享受擬真 3D 翻書效果。</li>
+            <li>首頁為筆記本封面，末頁為封底。中間頁面為可編輯與分享的內頁。</li>
+          </ul>
+        </div>
+        <div class="help-section">
+          <h3>🔗 頁面公開分享</h3>
+          <ul>
+            <li>每頁皆可獨立開啟分享開關。開啟後會自動生成唯讀公開連結，複製後分享給他人，他人將可透過此連結即時檢視您的筆記與手寫（無法編輯）。關閉開關後分享連結即刻失效。</li>
+          </ul>
+        </div>
+        <div class="form-actions">
+          <button class="action-btn primary" data-close="help-modal">開始使用</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Clear Page Confirmation Options -->
+  <div id="clear-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+        <h2 style="font-family: var(--font-book); font-size: 20px; color: var(--color-primary);">清除頁面內容</h2>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+          請選擇您要清除的筆記範圍（清除後無法還原）：
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <button id="clear-left-btn" class="action-btn secondary" style="width: 100%; justify-content: center; padding: 12px;">
+            清除左頁
+          </button>
+          <button id="clear-right-btn" class="action-btn secondary" style="width: 100%; justify-content: center; padding: 12px;">
+            清除右頁
+          </button>
+          <button id="clear-both-btn" class="action-btn danger" style="width: 100%; justify-content: center; padding: 12px;">
+            同時清除左右兩頁
+          </button>
+        </div>
+        <div class="form-actions" style="margin-top: 20px; justify-content: center;">
+          <button id="clear-cancel-btn" class="action-btn secondary" style="background: transparent; border-color: rgba(255, 255, 255, 0.1); min-width: 100px;">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Table of Contents Overview Grid -->
+  <div id="toc-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 820px; max-height: 80vh; width: 92%;">
+      <div class="modal-header">
+        <h2 style="font-family: var(--font-book); display: flex; align-items: center; gap: 8px;"><i data-lucide="layers" style="color: var(--color-primary);"></i> 目錄與頁面總覽</h2>
+        <button class="close-modal-btn" id="close-toc-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <p style="color: #9ca3af; font-size: 14px; margin-bottom: 24px;">點擊下方任何頁面圖卡，即可一鍵跳轉到該頁：</p>
+        <div id="toc-grid" class="toc-grid">
+          <!-- Page cards will be generated dynamically here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Color Picker at Body Root -->
+  <input type="color" id="custom-brush-color" style="position: fixed; bottom: 0; left: 0; width: 0; height: 0; opacity: 0; pointer-events: none; z-index: -9999;">
+
+  <!-- Load JS modules -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

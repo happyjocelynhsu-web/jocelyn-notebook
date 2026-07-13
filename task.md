@@ -1,0 +1,50 @@
+# 任務清單 - 反重力擬真翻書筆記本 (Vanilla JS ESM 版本)
+
+- [x] 第一階段：專案初始化與結構設定
+  - [x] Modify index.html (add TOC button in header, Add Page button in sidebar, and TOC modal markup)
+- [x] Modify style.css (add grid layout and styling for TOC modal and cards)
+  - [x] 設定基礎設計系統與 CSS（溫潤紙張色調、仿木紋/皮革桌面、高端擬真書本框架）
+- [x] 第二階段：擬真翻書與紙張 UI 開發
+  - [x] Modify book.js (implement dynamic page limits, dynamic flipToPage, and re-render/rebuild engine support)
+  - [x] Modify app.js (make EDITABLE_PAGES dynamic, hook up Add Page and TOC open/close/jump listeners)
+- [ ] Verification and tests（觸控）上皆能流暢翻頁
+  - [x] 實作前後翻頁按鈕與精美頁碼指示器
+  - [x] 實作響應式 Book Scaling（螢幕過窄時等比例縮小書本）
+- [x] 第三階段：雙層編輯器實作
+  - [x] 頂層手繪 Canvas (`canvas.js`)：支援 PointerEvents（Apple Pencil、手指、滑鼠），繪製平滑貝茲曲線，以百分比座標記錄
+  - [x] 畫筆工具列：畫筆/橡皮擦、畫筆粗細、顏色切換、清空功能
+  - [x] 底層文字層 (`text.js` -> 支援多媒體區塊)：點擊紙張空白處產生文字框，支援拖曳、雙擊刪除、鍵入繁體中文，百分比定位
+- [x] 第四階段：Supabase 整合與即時同步
+  - [x] 提供 Supabase SQL 建表腳本與資料庫設定教學
+  - [x] 實作 `db.js`：預設 LocalStorage 運作，偵測到 Supabase 金鑰時自動切換雲端同步與 Realtime
+  - [x] 實作「開啟分享」開關：動態修改 `is_shared` 狀態
+- [x] 第五階段：公開分享頁面實作
+  - [x] 實作 Hash/Path 路由解析 (`#/share/:pageId`)
+  - [x] 開發唯讀分享介面（唯讀載入手繪與文字，停用所有編輯工具）
+  - [x] 實作私密狀態檢查（若 `is_shared` 為 false，則顯示私密提示）
+- [x] 新增階段：圖片與影片上傳支援
+  - [x] 於 `index.html` 工具列新增「上傳圖片/影片」按鈕
+  - [x] 擴充 `text.js` 為多媒體區塊管理器，支援渲染圖片與影片區塊
+  - [x] 實作區塊的滑鼠/觸控拖曳與右下角縮放功能 (Resizing)
+  - [x] 實作本地 Base64 與 Supabase Storage 雙備援上傳儲存機制
+  - [x] 確保唯讀分享頁面能正確顯示圖片與影片
+- [x] 第六階段：測試、確認與部署
+  - [x] 使用本地自研 PowerShell 伺服器啟動網頁服務
+  - [x] 讓使用者在瀏覽器端手動驗證手繪與同步
+  - [x] 撰寫 `vercel.json` 部署設定檔
+  - [ ] 協助使用者部署至 Vercel
+- [x] 新增功能：視圖縮放與尺寸加大
+  - [x] 放大書本尺寸 10% (1040x650) 以填滿畫面
+  - [x] 新增 sidebar 視圖縮放控制面板（縮小、放大、重設）
+  - [x] 實作無級縮放與等比換算滑動 Pan 平移功能
+- [x] 響應式優化與 Word 式富文本功能
+  - [x] 移除導覽箭頭對 book-viewport 尺寸的影響，改用 absolute 定位以修復 iPad/平板畫面切除 bug
+  - [x] 針對螢幕 < 1024px 新增選單切換（Menu Toggle）按鈕與自動收摺側邊欄
+  - [x] 實作文字區塊 contenteditable 雙擊就地編輯
+  - [x] 實作 floating rich-text toolbar，提供字型 (預設/楷體/襯線/手寫/等寬)、大小、粗體、斜體、連結編輯
+- [x] 畫筆與文字色彩擴充及手寫座標校正
+  - [x] 擴充畫筆調色盤至 10 種現代顏色，並支援 RWD 自動換行排版
+  - [x] 於字詞工具列中新增「文字顏色」下拉選單（包含紅、藍、綠、紫、粉等 7 種顏色）
+  - [x] 重構 canvas.js 解析度設定，由動態 bounding rect 改為靜態 clientWidth/Height 佈局大小，徹底解決 iPad Apple Pencil 寫字軌跡偏移 Bug
+
+
