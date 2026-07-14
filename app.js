@@ -20,44 +20,50 @@ window.getSafeRect = function(element, pageNum) {
       const bookRect = bookEl.getBoundingClientRect();
       const isDouble = window.book && window.book.layoutMode === 'double';
       
+      // Use constant layout values to avoid Safari returning 0 during 3D flipping transitions
+      const elementOffsetLeft = 40; // padding-left of .paper-inner
+      const elementOffsetTop = 66;  // padding-top (30px) + page-header (24px) + margin-bottom (12px)
+      
+      const bookWidth = bookEl.clientWidth || (isDouble ? 1040 : 520);
+      const bookHeight = bookEl.clientHeight || 700;
+      
+      let unscaledPageLeft = 0;
+      let unscaledPageWidth = bookWidth;
+      
       if (isDouble) {
+        unscaledPageWidth = bookWidth / 2;
         const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
-        if (isLeftPage) {
-          return {
-            left: bookRect.left,
-            right: bookRect.left + bookRect.width / 2,
-            top: bookRect.top,
-            bottom: bookRect.bottom,
-            width: bookRect.width / 2,
-            height: bookRect.height,
-            x: bookRect.left,
-            y: bookRect.top
-          };
-        } else {
-          return {
-            left: bookRect.left + bookRect.width / 2,
-            right: bookRect.right,
-            top: bookRect.top,
-            bottom: bookRect.bottom,
-            width: bookRect.width / 2,
-            height: bookRect.height,
-            x: bookRect.left + bookRect.width / 2,
-            y: bookRect.top
-          };
+        if (!isLeftPage) {
+          unscaledPageLeft = bookWidth / 2;
         }
-      } else {
-        // Single-page layout mode: active page occupies the entire notebook container
-        return {
-          left: bookRect.left,
-          right: bookRect.right,
-          top: bookRect.top,
-          bottom: bookRect.bottom,
-          width: bookRect.width,
-          height: bookRect.height,
-          x: bookRect.left,
-          y: bookRect.top
-        };
       }
+      
+      // Calculate unscaled element coordinates relative to notebook container
+      const unscaledElementLeft = unscaledPageLeft + elementOffsetLeft;
+      const unscaledElementTop = elementOffsetTop;
+      const unscaledElementWidth = 440; // 520 - 80px (padding-left/right)
+      const unscaledElementHeight = 604; // 700 - 60px (padding-top/bottom) - 36px (header)
+      
+      // Scale factors based on transform scale of #notebook
+      const scaleX = bookRect.width / bookWidth;
+      const scaleY = bookRect.height / bookHeight;
+      
+      // Projected screen coordinates
+      const left = bookRect.left + unscaledElementLeft * scaleX;
+      const top = bookRect.top + unscaledElementTop * scaleY;
+      const width = unscaledElementWidth * scaleX;
+      const height = unscaledElementHeight * scaleY;
+      
+      return {
+        left: left,
+        right: left + width,
+        top: top,
+        bottom: top + height,
+        width: width,
+        height: height,
+        x: left,
+        y: top
+      };
     }
   }
   
