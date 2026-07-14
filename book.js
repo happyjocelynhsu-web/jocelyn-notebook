@@ -370,8 +370,13 @@ export class Book {
 
     const handleStart = (e) => {
       // Don't flip page if drawing or editing text
-      const target = e.target;
+      let target = e.target;
+      if (!target) return;
+      if (target.nodeType === 3) target = target.parentNode; // Safe text node resolution
+      if (typeof target.closest !== 'function') return;
+      
       if (target.closest('.editor-sidebar') || 
+          target.closest('.sketchbook-panel') || // Exclude floating Sketchbook panels (Undo, Redo, etc.)
           target.closest('.app-header') || 
           target.closest('.nav-arrow') || 
           target.closest('.tools-panel') || 
