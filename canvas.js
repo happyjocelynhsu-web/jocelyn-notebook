@@ -543,14 +543,8 @@ export class CanvasManager {
       const rect = window.getSafeRect ? window.getSafeRect(this.canvas, this.pageNum) : this.canvas.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
-      let x = px / rect.width;
+      const x = px / rect.width;
       const y = py / rect.height;
-
-      const isLeftPage = (this.pageNum % 2 !== 0);
-      const isDouble = window.book && window.book.layoutMode === 'double';
-      if (isDouble && isLeftPage) {
-        x = 1 - x;
-      }
       
       // Selection Handle Hit Detection
       if (this.selectedPaths.length > 0 && this.selectionBox) {
@@ -629,14 +623,8 @@ export class CanvasManager {
       const rect = window.getSafeRect ? window.getSafeRect(this.canvas, this.pageNum) : this.canvas.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
-      let x = px / rect.width;
+      const x = px / rect.width;
       const y = py / rect.height;
-
-      const isLeftPage = (this.pageNum % 2 !== 0);
-      const isDouble = window.book && window.book.layoutMode === 'double';
-      if (isDouble && isLeftPage) {
-        x = 1 - x;
-      }
 
       // Handle translation of selection
       if (this.isMovingSelection && this.selectionBox) {

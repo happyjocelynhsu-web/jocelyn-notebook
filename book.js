@@ -371,12 +371,16 @@ export class Book {
     const handleStart = (e) => {
       // Don't flip page if drawing or editing text
       const target = e.target;
-      if (target.classList.contains('drawing-canvas') || 
+      if (target.closest('.editor-sidebar') || 
+          target.closest('.app-header') || 
+          target.closest('.nav-arrow') || 
+          target.closest('.tools-panel') || 
+          target.closest('#sidebar-toggle-floating') || 
+          target.classList.contains('drawing-canvas') || 
           target.closest('.text-layer') || 
           target.closest('.text-block') || 
           target.tagName === 'INPUT' || 
-          target.tagName === 'TEXTAREA' ||
-          target.closest('.tools-panel')) {
+          target.tagName === 'TEXTAREA') {
         return;
       }
       

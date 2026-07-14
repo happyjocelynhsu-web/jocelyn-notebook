@@ -134,14 +134,8 @@ export class TextManager {
     if (this.isReadOnly) return;
 
     const rect = window.getSafeRect ? window.getSafeRect(this.container, this.pageNum) : this.container.getBoundingClientRect();
-    let x = parseFloat((((clickX - rect.left) / rect.width) * 100).toFixed(2));
+    const x = parseFloat((((clickX - rect.left) / rect.width) * 100).toFixed(2));
     const y = parseFloat((((clickY - rect.top) / rect.height) * 100).toFixed(2));
-
-    const isLeftPage = (this.pageNum % 2 !== 0);
-    const isDouble = window.book && window.book.layoutMode === 'double';
-    if (isDouble && isLeftPage) {
-      x = 100 - x;
-    }
 
     const newItem = {
       id: 'txt_' + Math.random().toString(36).substr(2, 9),
@@ -331,14 +325,8 @@ export class TextManager {
     const startY = e.clientY;
 
     const handleResizeMove = (ev) => {
-      let deltaX = ev.clientX - startX;
+      const deltaX = ev.clientX - startX;
       const deltaY = ev.clientY - startY;
-
-      const isLeftPage = (this.pageNum % 2 !== 0);
-      const isDouble = window.book && window.book.layoutMode === 'double';
-      if (isDouble && isLeftPage) {
-        deltaX = -deltaX;
-      }
 
       const newWidthPx = startWidth + deltaX;
       const newHeightPx = startHeight + deltaY;
@@ -407,14 +395,8 @@ export class TextManager {
     const deltaX = e.clientX - this.dragStart.x;
     const deltaY = e.clientY - this.dragStart.y;
 
-    let deltaPercentX = (deltaX / rect.width) * 100;
+    const deltaPercentX = (deltaX / rect.width) * 100;
     const deltaPercentY = (deltaY / rect.height) * 100;
-
-    const isLeftPage = (this.pageNum % 2 !== 0);
-    const isDouble = window.book && window.book.layoutMode === 'double';
-    if (isDouble && isLeftPage) {
-      deltaPercentX = -deltaPercentX;
-    }
 
     let newX = parseFloat((this.blockStart.x + deltaPercentX).toFixed(2));
     let newY = parseFloat((this.blockStart.y + deltaPercentY).toFixed(2));
