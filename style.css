@@ -2294,7 +2294,7 @@ body.mode-draw .workspace {
 
 /* --- Global Full-screen Pointer Input Overlay Canvas --- */
 .global-input-container {
-  position: absolute;
+  position: fixed !important;
   top: 0;
   left: 0;
   width: 100vw;

@@ -904,32 +904,8 @@ function setupToolbarEvents() {
       sidebarEl.classList.remove('active');
     }
 
-    // Auto layout switching based on editing vs browsing state
-    const doubleBtn = document.getElementById('layout-double-btn');
-    const singleBtn = document.getElementById('layout-single-btn');
-    if (doubleBtn && singleBtn) {
-      if (modeName === 'browse') {
-        singleBtn.classList.remove('active');
-        doubleBtn.classList.add('active');
-        doubleBtn.style.background = 'var(--color-primary)';
-        doubleBtn.style.borderColor = 'var(--color-primary)';
-        doubleBtn.style.color = 'white';
-        singleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
-        singleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        singleBtn.style.color = '#9ca3af';
-        if (book) book.setLayoutMode('double');
-      } else {
-        doubleBtn.classList.remove('active');
-        singleBtn.classList.add('active');
-        singleBtn.style.background = 'var(--color-primary)';
-        singleBtn.style.borderColor = 'var(--color-primary)';
-        singleBtn.style.color = 'white';
-        doubleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
-        doubleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        doubleBtn.style.color = '#9ca3af';
-        if (book) book.setLayoutMode('single');
-      }
-    }
+    // Auto layout switching based on editing vs browsing state has been disabled
+    // to prevent unexpected page jumps and allow editing in double-page layout mode.
     if (typeof syncSketchbookToolbarHighlights === 'function') {
       syncSketchbookToolbarHighlights();
     }
