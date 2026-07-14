@@ -15,7 +15,7 @@ window.getSafeRect = function(element, pageNum) {
   if (!element) return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
   
   if (pageNum) {
-    const bookEl = document.getElementById('book');
+    const bookEl = document.getElementById('notebook');
     if (bookEl) {
       const bookRect = bookEl.getBoundingClientRect();
       const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
