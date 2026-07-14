@@ -25,7 +25,7 @@ window.getSafeRect = function(element, pageNum) {
       const elementOffsetTop = 66;  // padding-top (30px) + page-header (24px) + margin-bottom (12px)
       
       const bookWidth = bookEl.clientWidth || (isDouble ? 1040 : 520);
-      const bookHeight = bookEl.clientHeight || 700;
+      const bookHeight = bookEl.clientHeight || 650;
       
       let unscaledPageLeft = 0;
       let unscaledPageWidth = bookWidth;
@@ -42,7 +42,7 @@ window.getSafeRect = function(element, pageNum) {
       const unscaledElementLeft = unscaledPageLeft + elementOffsetLeft;
       const unscaledElementTop = elementOffsetTop;
       const unscaledElementWidth = 440; // 520 - 80px (padding-left/right)
-      const unscaledElementHeight = 604; // 700 - 60px (padding-top/bottom) - 36px (header)
+      const unscaledElementHeight = 554; // 650 - 60px (padding-top/bottom) - 36px (header)
       
       // Scale factors based on transform scale of #notebook
       const scaleX = bookRect.width / bookWidth;
