@@ -183,7 +183,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  z-index: 200; /* Sit above all book pages, sheets, and drawing layers on desktop / large iPad */
+  z-index: 550 !important; /* Sit above full-screen drawing overlay (z-index 450) and drawing layers */
   transition: transform 0.3s ease;
   overflow-y: auto; /* Enable vertical scrolling */
   -webkit-overflow-scrolling: touch; /* Smooth inertia scrolling on iPad */
