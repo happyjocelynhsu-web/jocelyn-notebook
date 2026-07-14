@@ -18,28 +18,43 @@ window.getSafeRect = function(element, pageNum) {
     const bookEl = document.getElementById('notebook');
     if (bookEl) {
       const bookRect = bookEl.getBoundingClientRect();
-      const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
+      const isDouble = book && book.layoutMode === 'double';
       
-      if (isLeftPage) {
+      if (isDouble) {
+        const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
+        if (isLeftPage) {
+          return {
+            left: bookRect.left,
+            right: bookRect.left + bookRect.width / 2,
+            top: bookRect.top,
+            bottom: bookRect.bottom,
+            width: bookRect.width / 2,
+            height: bookRect.height,
+            x: bookRect.left,
+            y: bookRect.top
+          };
+        } else {
+          return {
+            left: bookRect.left + bookRect.width / 2,
+            right: bookRect.right,
+            top: bookRect.top,
+            bottom: bookRect.bottom,
+            width: bookRect.width / 2,
+            height: bookRect.height,
+            x: bookRect.left + bookRect.width / 2,
+            y: bookRect.top
+          };
+        }
+      } else {
+        // Single-page layout mode: active page occupies the entire notebook container
         return {
           left: bookRect.left,
-          right: bookRect.left + bookRect.width / 2,
-          top: bookRect.top,
-          bottom: bookRect.bottom,
-          width: bookRect.width / 2,
-          height: bookRect.height,
-          x: bookRect.left,
-          y: bookRect.top
-        };
-      } else {
-        return {
-          left: bookRect.left + bookRect.width / 2,
           right: bookRect.right,
           top: bookRect.top,
           bottom: bookRect.bottom,
-          width: bookRect.width / 2,
+          width: bookRect.width,
           height: bookRect.height,
-          x: bookRect.left + bookRect.width / 2,
+          x: bookRect.left,
           y: bookRect.top
         };
       }
@@ -2122,6 +2137,18 @@ function setupSketchbookEvents() {
               if (e.clientX >= rect.left && e.clientX <= rect.right &&
                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
                 targetPageNum = rightPageNum;
+              }
+            }
+          }
+        } else if (book && book.layoutMode === 'single') {
+          const activePageNum = book.activePageNum;
+          if (activePageNum) {
+            const canvasEl = document.getElementById(`canvas-${activePageNum}`);
+            if (canvasEl) {
+              const rect = window.getSafeRect(canvasEl, activePageNum);
+              if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                  e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                targetPageNum = activePageNum;
               }
             }
           }
