@@ -189,7 +189,8 @@ export class Book {
       } else if (this.currentSheet === this.totalContentSheets + 2) {
         this.activePageNum = this.totalPageCount + 1;
       } else {
-        this.activePageNum = this.currentSheet * 2;
+        // Default to the left page of the current spread (odd page) to prevent jumping to page 2
+        this.activePageNum = this.currentSheet * 2 - 1;
       }
     } else {
       document.body.classList.remove('single-page-mode');
