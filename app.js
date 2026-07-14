@@ -373,6 +373,42 @@ async function preloadPagesAndInitializeLayers() {
     
     if (!canvasEl || !textLayerEl) continue;
 
+    // Override getBoundingClientRect to calculate stable 2D bounds based on the flat #book container
+    // This solves all Safari WebKit 3D transformed client rect bugs on rotated pages (odd pages)
+    const customGetBoundingClientRect = () => {
+      const bookEl = document.getElementById('book');
+      if (!bookEl) return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+      const bookRect = bookEl.getBoundingClientRect();
+      const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
+      
+      if (isLeftPage) {
+        return {
+          left: bookRect.left,
+          right: bookRect.left + bookRect.width / 2,
+          top: bookRect.top,
+          bottom: bookRect.bottom,
+          width: bookRect.width / 2,
+          height: bookRect.height,
+          x: bookRect.left,
+          y: bookRect.top
+        };
+      } else {
+        return {
+          left: bookRect.left + bookRect.width / 2,
+          right: bookRect.right,
+          top: bookRect.top,
+          bottom: bookRect.bottom,
+          width: bookRect.width / 2,
+          height: bookRect.height,
+          x: bookRect.left + bookRect.width / 2,
+          y: bookRect.top
+        };
+      }
+    };
+
+    canvasEl.getBoundingClientRect = customGetBoundingClientRect;
+    textLayerEl.getBoundingClientRect = customGetBoundingClientRect;
+
     // Fetch page data from DB / LocalCache
     const pageData = await db.loadPage(pageNum);
     const isReadOnly = document.body.classList.contains('readonly-mode');
@@ -1590,15 +1626,7 @@ function renderLayersList() {
 
     const labelEl = document.createElement('span');
     labelEl.className = 'sk-layer-label';
-    
-    // Abbreviated label names in user-friendly Chinese
-    if (layer.id === 'text-media') {
-      labelEl.innerText = '媒體';
-    } else if (layer.id === 'default') {
-      labelEl.innerText = '圖 1';
-    } else {
-      labelEl.innerText = `圖 ${i}`;
-    }
+    labelEl.innerText = `${i + 1}`;
     cardEl.appendChild(labelEl);
 
     // Contextual Options Toolbar (flips left next to the card)
@@ -1717,6 +1745,12 @@ function renderLayersList() {
         mgr.activeLayerId = layer.id;
       }
       
+      // Highlight active card directly in DOM
+      document.querySelectorAll('.sk-layer-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      cardEl.classList.add('active');
+      
       const isVisible = optionsEl.style.display === 'flex';
       
       // Close all other popups
@@ -1726,9 +1760,6 @@ function renderLayersList() {
       
       // Toggle current popup
       optionsEl.style.display = isVisible ? 'none' : 'flex';
-      
-      renderLayersList();
-      if (window.lucide) window.lucide.createIcons();
     });
 
     container.appendChild(cardEl);
@@ -1955,26 +1986,23 @@ function setupSketchbookEvents() {
     skAddLayer.addEventListener('click', () => {
       const mgr = getActiveCanvasManager();
       if (mgr) {
-        const layerCount = mgr.layers.filter(l => l.id !== 'text-media').length + 1;
-        const name = prompt('請輸入新圖層名稱:', `圖層 ${layerCount}`);
-        if (name) {
-          const newLayer = {
-            id: 'layer_' + Math.random().toString(36).substr(2, 9),
-            name: name,
-            visible: true,
-            locked: false
-          };
-          const textMediaIdx = mgr.layers.findIndex(l => l.id === 'text-media');
-          if (textMediaIdx !== -1) {
-            mgr.layers.splice(textMediaIdx, 0, newLayer);
-          } else {
-            mgr.layers.push(newLayer);
-          }
-          mgr.activeLayerId = newLayer.id;
-          mgr.onSave(mgr.getPaths());
-          renderLayersList();
-          if (window.lucide) window.lucide.createIcons();
+        const layerCount = mgr.layers.length + 1;
+        const newLayer = {
+          id: 'layer_' + Math.random().toString(36).substr(2, 9),
+          name: `圖層 ${layerCount}`,
+          visible: true,
+          locked: false
+        };
+        const textMediaIdx = mgr.layers.findIndex(l => l.id === 'text-media');
+        if (textMediaIdx !== -1) {
+          mgr.layers.splice(textMediaIdx, 0, newLayer);
+        } else {
+          mgr.layers.push(newLayer);
         }
+        mgr.activeLayerId = newLayer.id;
+        mgr.onSave(mgr.getPaths());
+        renderLayersList();
+        if (window.lucide) window.lucide.createIcons();
       }
     });
   }
