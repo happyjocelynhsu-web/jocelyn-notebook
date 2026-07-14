@@ -6,6 +6,7 @@ export class CanvasManager {
     this.ctx = canvas.getContext('2d');
     this.onSave = options.onSave || (() => {});
     this.isReadOnly = options.isReadOnly || false;
+    this.pageNum = options.pageNum;
     
     this.isDrawing = false;
     this.paths = []; // Array of standard paths: { color, size, isEraser, points: [{x, y}] } OR fill paths: { type: 'fill', color, x, y }
@@ -539,7 +540,7 @@ export class CanvasManager {
       
       e.preventDefault();
       
-      const rect = this.canvas.getBoundingClientRect();
+      const rect = window.getSafeRect ? window.getSafeRect(this.canvas, this.pageNum) : this.canvas.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       const x = px / rect.width;
@@ -619,7 +620,7 @@ export class CanvasManager {
       
       e.preventDefault();
       
-      const rect = this.canvas.getBoundingClientRect();
+      const rect = window.getSafeRect ? window.getSafeRect(this.canvas, this.pageNum) : this.canvas.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       const x = px / rect.width;

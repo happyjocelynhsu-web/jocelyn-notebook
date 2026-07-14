@@ -5,6 +5,7 @@ export class TextManager {
     this.container = container; // The .text-layer element
     this.onSave = options.onSave || (() => {});
     this.isReadOnly = options.isReadOnly || false;
+    this.pageNum = options.pageNum;
     
     this.texts = []; // Array of blocks: { id, type, x, y, width, height, content }
     this.draggedBlock = null;
@@ -132,7 +133,7 @@ export class TextManager {
   addBlock(clickX, clickY) {
     if (this.isReadOnly) return;
 
-    const rect = this.container.getBoundingClientRect();
+    const rect = window.getSafeRect ? window.getSafeRect(this.container, this.pageNum) : this.container.getBoundingClientRect();
     const x = parseFloat((((clickX - rect.left) / rect.width) * 100).toFixed(2));
     const y = parseFloat((((clickY - rect.top) / rect.height) * 100).toFixed(2));
 
@@ -317,7 +318,7 @@ export class TextManager {
     e.stopPropagation();
     e.preventDefault();
 
-    const rect = this.container.getBoundingClientRect();
+    const rect = window.getSafeRect ? window.getSafeRect(this.container, this.pageNum) : this.container.getBoundingClientRect();
     const startWidth = blockEl.clientWidth;
     const startHeight = blockEl.clientHeight;
     const startX = e.clientX;
@@ -390,7 +391,7 @@ export class TextManager {
   handleDragMove(e) {
     if (!this.draggedBlock) return;
 
-    const rect = this.container.getBoundingClientRect();
+    const rect = window.getSafeRect ? window.getSafeRect(this.container, this.pageNum) : this.container.getBoundingClientRect();
     const deltaX = e.clientX - this.dragStart.x;
     const deltaY = e.clientY - this.dragStart.y;
 

@@ -10,6 +10,45 @@ const canvasManagers = {};
 const textManagers = {};
 let currentActiveSharePage = null; // Currently selected page number for sharing config
 
+// Safely calculate bounding boxes, bypassing Safari WebKit 3D transformed client rect bugs on rotated pages
+window.getSafeRect = function(element, pageNum) {
+  if (!element) return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+  
+  if (pageNum) {
+    const bookEl = document.getElementById('book');
+    if (bookEl) {
+      const bookRect = bookEl.getBoundingClientRect();
+      const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
+      
+      if (isLeftPage) {
+        return {
+          left: bookRect.left,
+          right: bookRect.left + bookRect.width / 2,
+          top: bookRect.top,
+          bottom: bookRect.bottom,
+          width: bookRect.width / 2,
+          height: bookRect.height,
+          x: bookRect.left,
+          y: bookRect.top
+        };
+      } else {
+        return {
+          left: bookRect.left + bookRect.width / 2,
+          right: bookRect.right,
+          top: bookRect.top,
+          bottom: bookRect.bottom,
+          width: bookRect.width / 2,
+          height: bookRect.height,
+          x: bookRect.left + bookRect.width / 2,
+          y: bookRect.top
+        };
+      }
+    }
+  }
+  
+  return element.getBoundingClientRect();
+};
+
 // Page range for content (editable)
 let EDITABLE_PAGES = [];
 
@@ -373,48 +412,13 @@ async function preloadPagesAndInitializeLayers() {
     
     if (!canvasEl || !textLayerEl) continue;
 
-    // Override getBoundingClientRect to calculate stable 2D bounds based on the flat #book container
-    // This solves all Safari WebKit 3D transformed client rect bugs on rotated pages (odd pages)
-    const customGetBoundingClientRect = () => {
-      const bookEl = document.getElementById('book');
-      if (!bookEl) return { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
-      const bookRect = bookEl.getBoundingClientRect();
-      const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
-      
-      if (isLeftPage) {
-        return {
-          left: bookRect.left,
-          right: bookRect.left + bookRect.width / 2,
-          top: bookRect.top,
-          bottom: bookRect.bottom,
-          width: bookRect.width / 2,
-          height: bookRect.height,
-          x: bookRect.left,
-          y: bookRect.top
-        };
-      } else {
-        return {
-          left: bookRect.left + bookRect.width / 2,
-          right: bookRect.right,
-          top: bookRect.top,
-          bottom: bookRect.bottom,
-          width: bookRect.width / 2,
-          height: bookRect.height,
-          x: bookRect.left + bookRect.width / 2,
-          y: bookRect.top
-        };
-      }
-    };
-
-    canvasEl.getBoundingClientRect = customGetBoundingClientRect;
-    textLayerEl.getBoundingClientRect = customGetBoundingClientRect;
-
     // Fetch page data from DB / LocalCache
     const pageData = await db.loadPage(pageNum);
     const isReadOnly = document.body.classList.contains('readonly-mode');
 
     // Initialize Canvas
     const canvasMgr = new CanvasManager(canvasEl, {
+      pageNum: pageNum,
       isReadOnly: isReadOnly,
       onSave: (paths) => handlePageSave(pageNum, paths, textManagers[pageNum] ? textManagers[pageNum].getTexts() : [])
     });
@@ -437,6 +441,7 @@ async function preloadPagesAndInitializeLayers() {
 
     // Initialize Text Layer
     const textMgr = new TextManager(textLayerEl, {
+      pageNum: pageNum,
       isReadOnly: isReadOnly,
       onSave: (texts) => handlePageSave(pageNum, canvasManagers[pageNum] ? canvasManagers[pageNum].getPaths() : [], texts)
     });
@@ -2103,7 +2108,7 @@ function setupSketchbookEvents() {
           if (leftPageNum) {
             const leftCanvas = document.getElementById(`canvas-${leftPageNum}`);
             if (leftCanvas) {
-              const rect = leftCanvas.getBoundingClientRect();
+              const rect = window.getSafeRect(leftCanvas, leftPageNum);
               if (e.clientX >= rect.left && e.clientX <= rect.right &&
                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
                 targetPageNum = leftPageNum;
@@ -2113,7 +2118,7 @@ function setupSketchbookEvents() {
           if (rightPageNum) {
             const rightCanvas = document.getElementById(`canvas-${rightPageNum}`);
             if (rightCanvas) {
-              const rect = rightCanvas.getBoundingClientRect();
+              const rect = window.getSafeRect(rightCanvas, rightPageNum);
               if (e.clientX >= rect.left && e.clientX <= rect.right &&
                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
                 targetPageNum = rightPageNum;
