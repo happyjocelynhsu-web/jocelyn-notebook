@@ -18,7 +18,7 @@ window.getSafeRect = function(element, pageNum) {
     const bookEl = document.getElementById('notebook');
     if (bookEl) {
       const bookRect = bookEl.getBoundingClientRect();
-      const isDouble = book && book.layoutMode === 'double';
+      const isDouble = window.book && window.book.layoutMode === 'double';
       
       if (isDouble) {
         const isLeftPage = (pageNum % 2 !== 0); // Odd pages are left!
@@ -244,6 +244,7 @@ async function initEditor() {
   book = new Book('notebook', {
     onPageChange: (state) => handleBookPageChange(state)
   });
+  window.book = book;
 
   // Setup navigation arrows
   document.getElementById('prev-page-btn').addEventListener('click', () => book.prev());
@@ -2113,10 +2114,10 @@ function setupSketchbookEvents() {
     const forwardEvent = (e) => {
       // Find the active draw page on pointerdown
       if (e.type === 'pointerdown') {
-        const currentPages = book ? book.getCurrentPages() : null;
-        let targetPageNum = book ? book.activePageNum : null;
+        const currentPages = window.book ? window.book.getCurrentPages() : null;
+        let targetPageNum = window.book ? window.book.activePageNum : null;
         
-        if (book && book.layoutMode === 'double' && currentPages) {
+        if (window.book && window.book.layoutMode === 'double' && currentPages) {
           const leftPageNum = currentPages.left;
           const rightPageNum = currentPages.right;
           
@@ -2140,8 +2141,8 @@ function setupSketchbookEvents() {
               }
             }
           }
-        } else if (book && book.layoutMode === 'single') {
-          const activePageNum = book.activePageNum;
+        } else if (window.book && window.book.layoutMode === 'single') {
+          const activePageNum = window.book.activePageNum;
           if (activePageNum) {
             const canvasEl = document.getElementById(`canvas-${activePageNum}`);
             if (canvasEl) {

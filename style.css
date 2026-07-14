@@ -1508,7 +1508,7 @@ input:checked + .slider:before {
   pointer-events: none !important; /* Disable hitboxes on inactive sheets */
 }
 
-.single-page-mode .sheet:has(.active-page) {
+.single-page-mode .sheet.active-sheet {
   pointer-events: auto !important; /* Only let active sheet handle interactions */
   z-index: 10 !important;
 }

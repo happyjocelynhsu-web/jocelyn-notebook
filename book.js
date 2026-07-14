@@ -217,14 +217,19 @@ export class Book {
   updateActivePageClass() {
     const allPages = this.container.querySelectorAll('.page');
     allPages.forEach(p => p.classList.remove('active-page'));
+    this.sheets.forEach(s => s.classList.remove('active-sheet'));
     
     let activeEl = null;
+    let activeSheet = null;
     if (this.activePageNum === 1) {
+      activeSheet = this.sheets[0];
       activeEl = this.sheets[0].querySelector('.page.back');
     } else if (this.activePageNum === this.totalPageCount + 1) {
+      activeSheet = this.sheets[this.totalContentSheets + 1];
       activeEl = this.sheets[this.totalContentSheets + 1].querySelector('.page.back');
     } else {
       const sheetIdx = Math.floor(this.activePageNum / 2);
+      activeSheet = this.sheets[sheetIdx];
       const isEven = (this.activePageNum % 2 === 0);
       const pageClass = isEven ? '.page.front' : '.page.back';
       activeEl = this.sheets[sheetIdx] ? this.sheets[sheetIdx].querySelector(pageClass) : null;
@@ -232,6 +237,9 @@ export class Book {
     
     if (activeEl) {
       activeEl.classList.add('active-page');
+    }
+    if (activeSheet) {
+      activeSheet.classList.add('active-sheet');
     }
   }
 
