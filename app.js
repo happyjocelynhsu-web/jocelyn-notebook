@@ -597,6 +597,17 @@ async function preloadPagesAndInitializeLayers() {
       }
     });
   }
+
+  // Resize visible page canvases immediately after initialization
+  const currentPages = book ? book.getCurrentPages() : null;
+  if (currentPages) {
+    if (currentPages.left && canvasManagers[currentPages.left]) {
+      canvasManagers[currentPages.left].resizeCanvas();
+    }
+    if (currentPages.right && canvasManagers[currentPages.right]) {
+      canvasManagers[currentPages.right].resizeCanvas();
+    }
+  }
 }
 
 // Autosave function trigger
@@ -659,6 +670,14 @@ function handleBookPageChange(state) {
 
   // Manage Supabase Realtime channel bindings based on visible pages
   manageRealtimeSubscriptions(state);
+
+  // Resize visible canvases to ensure they have correct dimensions after layout
+  if (state.left && canvasManagers[state.left]) {
+    canvasManagers[state.left].resizeCanvas();
+  }
+  if (state.right && canvasManagers[state.right]) {
+    canvasManagers[state.right].resizeCanvas();
+  }
 
   // Refresh layers list on page change
   renderLayersList();
@@ -829,6 +848,17 @@ function setupToolbarEvents() {
         globalInputContainer.style.display = 'block';
         globalInputCanvas.width = window.innerWidth;
         globalInputCanvas.height = window.innerHeight;
+        
+        // Resize active page canvases when entering drawing mode to ensure correct resolutions
+        const currentPages = book ? book.getCurrentPages() : null;
+        if (currentPages) {
+          if (currentPages.left && canvasManagers[currentPages.left]) {
+            canvasManagers[currentPages.left].resizeCanvas();
+          }
+          if (currentPages.right && canvasManagers[currentPages.right]) {
+            canvasManagers[currentPages.right].resizeCanvas();
+          }
+        }
       } else {
         globalInputContainer.style.display = 'none';
       }
