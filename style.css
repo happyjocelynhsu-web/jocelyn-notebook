@@ -617,6 +617,8 @@ input:checked + .slider:before {
 /* Page Back Side starts rotated */
 .page.back {
   transform: rotateY(180deg);
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   border-top-left-radius: 8px;
