@@ -372,6 +372,7 @@ export class Book {
       // Don't flip page if drawing or editing text
       const target = e.target;
       if (target.classList.contains('drawing-canvas') || 
+          target.closest('.text-layer') || 
           target.closest('.text-block') || 
           target.tagName === 'INPUT' || 
           target.tagName === 'TEXTAREA' ||
