@@ -830,6 +830,107 @@ function syncPageDataFromCloud(pageNum, newData) {
    TOOLBAR & SETTINGS UI EVENTS
    ========================================================================= */
 
+function clearButtonStates() {
+  const ids = ['tool-browse', 'tool-text', 'tool-pen', 'tool-eraser', 'tool-lasso', 'tool-bucket'];
+  ids.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.remove('active');
+  });
+}
+
+function updateQuickButtonsHighlight(activeId) {
+  const ids = ['quick-tool-browse', 'quick-tool-text', 'quick-tool-pen', 'quick-tool-eraser', 'quick-tool-lasso', 'quick-tool-bucket'];
+  ids.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      if (id === activeId) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+  });
+}
+
+function setMode(modeName) {
+  document.body.classList.remove('mode-browse', 'mode-text', 'mode-draw');
+  document.body.classList.add(`mode-${modeName}`);
+
+  // Toggle global input overlay canvas
+  const globalInputContainer = document.getElementById('global-input-container');
+  const globalInputCanvas = document.getElementById('global-input-canvas');
+  if (globalInputContainer && globalInputCanvas) {
+    if (modeName === 'draw') {
+      globalInputContainer.style.display = 'block';
+      globalInputCanvas.width = window.innerWidth;
+      globalInputCanvas.height = window.innerHeight;
+      
+      // Resize active page canvases when entering drawing mode to ensure correct resolutions
+      const currentPages = book ? book.getCurrentPages() : null;
+      if (currentPages) {
+        if (currentPages.left && canvasManagers[currentPages.left]) {
+          canvasManagers[currentPages.left].resizeCanvas();
+        }
+        if (currentPages.right && canvasManagers[currentPages.right]) {
+          canvasManagers[currentPages.right].resizeCanvas();
+        }
+      }
+    } else {
+      globalInputContainer.style.display = 'none';
+    }
+  }
+
+  // Manage active tool button classes synchronously to prevent event race fallbacks
+  const browseBtn = document.getElementById('tool-browse');
+  const textBtn = document.getElementById('tool-text');
+  const sidebarEl = document.getElementById('editor-tools');
+
+  if (modeName === 'browse') {
+    clearButtonStates();
+    if (browseBtn) browseBtn.classList.add('active');
+    updateQuickButtonsHighlight('quick-tool-browse');
+  } else if (modeName === 'text') {
+    clearButtonStates();
+    if (textBtn) textBtn.classList.add('active');
+    updateQuickButtonsHighlight('quick-tool-text');
+  } else if (modeName === 'draw') {
+    // Handled individually by click handlers
+  }
+
+  // Auto-close sidebar on mobile/tablet screen widths (including landscape iPad Pro up to 1366px)
+  const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+  if (sidebarEl && (window.innerWidth <= 1366 || isIPad)) {
+    sidebarEl.classList.remove('active');
+  }
+
+  // Auto layout switching based on editing vs browsing state
+  const doubleBtn = document.getElementById('layout-double-btn');
+  const singleBtn = document.getElementById('layout-single-btn');
+  if (doubleBtn && singleBtn) {
+    if (modeName === 'browse') {
+      singleBtn.classList.remove('active');
+      doubleBtn.classList.add('active');
+      doubleBtn.style.background = 'var(--color-primary)';
+      doubleBtn.style.borderColor = 'var(--color-primary)';
+      doubleBtn.style.color = 'white';
+      singleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
+      singleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      singleBtn.style.color = '#9ca3af';
+      if (window.book) window.book.setLayoutMode('double');
+    } else {
+      doubleBtn.classList.remove('active');
+      singleBtn.classList.add('active');
+      singleBtn.style.background = 'var(--color-primary)';
+      singleBtn.style.borderColor = 'var(--color-primary)';
+      singleBtn.style.color = 'white';
+      doubleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
+      doubleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      doubleBtn.style.color = '#9ca3af';
+      if (window.book) window.book.setLayoutMode('single');
+    }
+  }
+  if (typeof syncSketchbookToolbarHighlights === 'function') {
+    syncSketchbookToolbarHighlights();
+  }
+}
+
 function setupToolbarEvents() {
   // Initialize default mode
   document.body.classList.add('mode-browse');
@@ -841,113 +942,17 @@ function setupToolbarEvents() {
   const lassoBtn = document.getElementById('tool-lasso');
   const bucketBtn = document.getElementById('tool-bucket');
 
-  const sidebarEl = document.getElementById('editor-tools');
-
-  const clearButtonStates = () => {
-    browseBtn.classList.remove('active');
-    textBtn.classList.remove('active');
-    penBtn.classList.remove('active');
-    eraserBtn.classList.remove('active');
-    if (lassoBtn) lassoBtn.classList.remove('active');
-    if (bucketBtn) bucketBtn.classList.remove('active');
-  };
-
-  const updateQuickButtonsHighlight = (activeId) => {
-    const ids = ['quick-tool-browse', 'quick-tool-text', 'quick-tool-pen', 'quick-tool-eraser', 'quick-tool-lasso', 'quick-tool-bucket'];
-    ids.forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        if (id === activeId) btn.classList.add('active');
-        else btn.classList.remove('active');
-      }
+  if (browseBtn) {
+    browseBtn.addEventListener('click', () => {
+      setMode('browse');
     });
-  };
+  }
 
-  const setMode = (modeName) => {
-    document.body.classList.remove('mode-browse', 'mode-text', 'mode-draw');
-    document.body.classList.add(`mode-${modeName}`);
-
-    // Toggle global input overlay canvas
-    const globalInputContainer = document.getElementById('global-input-container');
-    const globalInputCanvas = document.getElementById('global-input-canvas');
-    if (globalInputContainer && globalInputCanvas) {
-      if (modeName === 'draw') {
-        globalInputContainer.style.display = 'block';
-        globalInputCanvas.width = window.innerWidth;
-        globalInputCanvas.height = window.innerHeight;
-        
-        // Resize active page canvases when entering drawing mode to ensure correct resolutions
-        const currentPages = book ? book.getCurrentPages() : null;
-        if (currentPages) {
-          if (currentPages.left && canvasManagers[currentPages.left]) {
-            canvasManagers[currentPages.left].resizeCanvas();
-          }
-          if (currentPages.right && canvasManagers[currentPages.right]) {
-            canvasManagers[currentPages.right].resizeCanvas();
-          }
-        }
-      } else {
-        globalInputContainer.style.display = 'none';
-      }
-    }
-
-    // Manage active tool button classes synchronously to prevent event race fallbacks
-    if (modeName === 'browse') {
-      clearButtonStates();
-      browseBtn.classList.add('active');
-      updateQuickButtonsHighlight('quick-tool-browse');
-    } else if (modeName === 'text') {
-      clearButtonStates();
-      textBtn.classList.add('active');
-      updateQuickButtonsHighlight('quick-tool-text');
-    } else if (modeName === 'draw') {
-      // Handled individually by click handlers
-    }
-
-    // Auto-close sidebar on mobile/tablet screen widths (including landscape iPad Pro up to 1366px)
-    const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
-    if (sidebarEl && (window.innerWidth <= 1366 || isIPad)) {
-      sidebarEl.classList.remove('active');
-    }
-
-    // Auto layout switching based on editing vs browsing state
-    const doubleBtn = document.getElementById('layout-double-btn');
-    const singleBtn = document.getElementById('layout-single-btn');
-    if (doubleBtn && singleBtn) {
-      if (modeName === 'browse') {
-        singleBtn.classList.remove('active');
-        doubleBtn.classList.add('active');
-        doubleBtn.style.background = 'var(--color-primary)';
-        doubleBtn.style.borderColor = 'var(--color-primary)';
-        doubleBtn.style.color = 'white';
-        singleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
-        singleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        singleBtn.style.color = '#9ca3af';
-        if (window.book) window.book.setLayoutMode('double');
-      } else {
-        doubleBtn.classList.remove('active');
-        singleBtn.classList.add('active');
-        singleBtn.style.background = 'var(--color-primary)';
-        singleBtn.style.borderColor = 'var(--color-primary)';
-        singleBtn.style.color = 'white';
-        doubleBtn.style.background = 'rgba(255, 255, 255, 0.04)';
-        doubleBtn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-        doubleBtn.style.color = '#9ca3af';
-        if (window.book) window.book.setLayoutMode('single');
-      }
-    }
-    if (typeof syncSketchbookToolbarHighlights === 'function') {
-      syncSketchbookToolbarHighlights();
-    }
-  };
-
-  browseBtn.addEventListener('click', () => {
-    setMode('browse');
-  });
-
-  textBtn.addEventListener('click', () => {
-    setMode('text');
-  });
+  if (textBtn) {
+    textBtn.addEventListener('click', () => {
+      setMode('text');
+    });
+  }
 
   penBtn.addEventListener('click', () => {
     clearButtonStates();
@@ -1873,21 +1878,92 @@ function setupSketchbookEvents() {
   const lassoBtn = document.getElementById('tool-lasso');
   const bucketBtn = document.getElementById('tool-bucket');
 
-  const bindSkBtn = (skBtnId, sidebarBtn) => {
-    const skBtn = document.getElementById(skBtnId);
-    if (skBtn && sidebarBtn) {
-      skBtn.addEventListener('click', () => {
-        sidebarBtn.click();
-      });
-    }
-  };
+  const skBrowse = document.getElementById('sk-tool-browse');
+  const skText = document.getElementById('sk-tool-text');
+  const skPen = document.getElementById('sk-tool-pen');
+  const skEraser = document.getElementById('sk-tool-eraser');
+  const skLasso = document.getElementById('sk-tool-lasso');
+  const skBucket = document.getElementById('sk-tool-bucket');
 
-  bindSkBtn('sk-tool-browse', browseBtn);
-  bindSkBtn('sk-tool-text', textBtn);
-  bindSkBtn('sk-tool-pen', penBtn);
-  bindSkBtn('sk-tool-eraser', eraserBtn);
-  bindSkBtn('sk-tool-lasso', lassoBtn);
-  bindSkBtn('sk-tool-bucket', bucketBtn);
+  if (skBrowse) {
+    skBrowse.addEventListener('click', () => {
+      setMode('browse');
+    });
+  }
+
+  if (skText) {
+    skText.addEventListener('click', () => {
+      setMode('text');
+    });
+  }
+
+  if (skPen) {
+    skPen.addEventListener('click', () => {
+      clearButtonStates();
+      if (penBtn) penBtn.classList.add('active');
+      updateQuickButtonsHighlight('quick-tool-pen');
+      setMode('draw');
+      updateAllCanvasBrushes(mgr => {
+        mgr.setLassoMode(false);
+        mgr.setFillMode(false);
+        mgr.setEraserMode(false);
+      });
+      if (typeof syncSketchbookToolbarHighlights === 'function') {
+        syncSketchbookToolbarHighlights();
+      }
+    });
+  }
+
+  if (skEraser) {
+    skEraser.addEventListener('click', () => {
+      clearButtonStates();
+      if (eraserBtn) eraserBtn.classList.add('active');
+      updateQuickButtonsHighlight('quick-tool-eraser');
+      setMode('draw');
+      updateAllCanvasBrushes(mgr => {
+        mgr.setLassoMode(false);
+        mgr.setFillMode(false);
+        mgr.setEraserMode(true);
+      });
+      if (typeof syncSketchbookToolbarHighlights === 'function') {
+        syncSketchbookToolbarHighlights();
+      }
+    });
+  }
+
+  if (skLasso) {
+    skLasso.addEventListener('click', () => {
+      clearButtonStates();
+      if (lassoBtn) lassoBtn.classList.add('active');
+      updateQuickButtonsHighlight('quick-tool-lasso');
+      setMode('draw');
+      updateAllCanvasBrushes(mgr => {
+        mgr.setEraserMode(false);
+        mgr.setFillMode(false);
+        mgr.setLassoMode(true);
+      });
+      if (typeof syncSketchbookToolbarHighlights === 'function') {
+        syncSketchbookToolbarHighlights();
+      }
+    });
+  }
+
+  if (skBucket) {
+    skBucket.addEventListener('click', () => {
+      clearButtonStates();
+      if (bucketBtn) bucketBtn.classList.add('active');
+      updateQuickButtonsHighlight('quick-tool-bucket');
+      setMode('draw');
+      updateAllCanvasBrushes(mgr => {
+        mgr.setEraserMode(false);
+        mgr.setLassoMode(false);
+        mgr.setFillMode(true);
+      });
+      if (typeof syncSketchbookToolbarHighlights === 'function') {
+        syncSketchbookToolbarHighlights();
+      }
+    });
+  }
 
   // 2. Undo / Redo
   const skUndo = document.getElementById('sk-undo');
