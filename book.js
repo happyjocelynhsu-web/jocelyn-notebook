@@ -328,10 +328,10 @@ export class Book {
   getCurrentPages() {
     if (this.layoutMode === 'single') {
       if (this.activePageNum === 1) {
-        return { type: 'cover', label: '封面', left: null, right: 1 };
+        return { type: 'spread', label: '第 1 頁', left: 1, right: null };
       }
-      if (this.activePageNum === 9) {
-        return { type: 'backcover', label: '封底', left: 9, right: null };
+      if (this.activePageNum === this.totalPageCount + 1) {
+        return { type: 'backcover', label: '封底', left: this.totalPageCount + 1, right: null };
       }
       return {
         type: 'spread',
@@ -344,8 +344,8 @@ export class Book {
     if (this.currentSheet === 0) {
       return { type: 'cover', label: '封面', left: null, right: 1 };
     }
-    if (this.currentSheet === 5) {
-      return { type: 'backcover', label: '封底', left: 9, right: null };
+    if (this.currentSheet === this.totalSheets - 1) {
+      return { type: 'backcover', label: '封底', left: this.totalPageCount + 1, right: null };
     }
     
     const left = this.currentSheet * 2 - 1;
