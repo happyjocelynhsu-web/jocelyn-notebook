@@ -1,9 +1,9 @@
 // app.js - Application Coordinator & Controller
 
-import { db } from './db.js?v=14';
-import { Book } from './book.js?v=14';
-import { CanvasManager } from './canvas.js?v=14';
-import { TextManager } from './text.js?v=14';
+import { db } from './db.js?v=15';
+import { Book } from './book.js?v=15';
+import { CanvasManager } from './canvas.js?v=15';
+import { TextManager } from './text.js?v=15';
 
 let book = null;
 const canvasManagers = {};
@@ -256,8 +256,8 @@ async function initEditor() {
   document.getElementById('prev-page-btn').addEventListener('click', () => book.prev());
   document.getElementById('next-page-btn').addEventListener('click', () => book.next());
 
-  // 4. Preload and initialize all editable pages
-  await preloadPagesAndInitializeLayers();
+  // 4. Preload and initialize all editable pages (run in background, do not block UI thread)
+  preloadPagesAndInitializeLayers();
 
   // Setup responsive sidebar toggle for tablets/mobile (Header Menu + Side Floating Handle)
   const sidebarToggle = document.getElementById('sidebar-toggle-btn');
