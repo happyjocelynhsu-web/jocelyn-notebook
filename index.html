@@ -21,7 +21,31 @@
       errDiv.style.fontFamily = 'monospace';
       errDiv.style.whiteSpace = 'pre-wrap';
       errDiv.innerText = 'JS Error: ' + e.message + '\nAt: ' + e.filename + ':' + e.lineno + ':' + e.colno + '\nStack: ' + (e.error ? e.error.stack : 'N/A');
-      document.body.appendChild(errDiv);
+      if (document.body) {
+        document.body.appendChild(errDiv);
+      } else {
+        document.documentElement.appendChild(errDiv);
+      }
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      const errDiv = document.createElement('div');
+      errDiv.style.position = 'fixed';
+      errDiv.style.top = '10px';
+      errDiv.style.left = '10px';
+      errDiv.style.right = '10px';
+      errDiv.style.backgroundColor = '#f97316';
+      errDiv.style.color = '#ffffff';
+      errDiv.style.padding = '20px';
+      errDiv.style.zIndex = '999999';
+      errDiv.style.borderRadius = '8px';
+      errDiv.style.fontFamily = 'monospace';
+      errDiv.style.whiteSpace = 'pre-wrap';
+      errDiv.innerText = 'Promise Rejection: ' + (e.reason ? (e.reason.message || e.reason) : 'Unknown rejection') + '\nStack: ' + (e.reason && e.reason.stack ? e.reason.stack : 'N/A');
+      if (document.body) {
+        document.body.appendChild(errDiv);
+      } else {
+        document.documentElement.appendChild(errDiv);
+      }
     });
   </script>
   
@@ -37,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -492,6 +516,6 @@ alter publication supabase_realtime add table notebook_pages;</pre>
   <input type="color" id="custom-brush-color" style="position: fixed; bottom: 0; left: 0; width: 0; height: 0; opacity: 0; pointer-events: none; z-index: -9999;">
 
   <!-- Load JS modules -->
-  <script type="module" src="app.js?v=13"></script>
+  <script type="module" src="app.js?v=14"></script>
 </body>
 </html>
