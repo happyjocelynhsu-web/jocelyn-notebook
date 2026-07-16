@@ -381,7 +381,7 @@ export class Book {
           target.closest('.nav-arrow') || 
           target.closest('.tools-panel') || 
           target.closest('#sidebar-toggle-floating') || 
-          target.classList.contains('drawing-canvas') || 
+          (target.classList && target.classList.contains('drawing-canvas')) || 
           target.closest('.text-layer') || 
           target.closest('.text-block') || 
           target.tagName === 'INPUT' || 

@@ -1,9 +1,9 @@
 // app.js - Application Coordinator & Controller
 
-import { db } from './db.js';
-import { Book } from './book.js';
-import { CanvasManager } from './canvas.js';
-import { TextManager } from './text.js';
+import { db } from './db.js?v=13';
+import { Book } from './book.js?v=13';
+import { CanvasManager } from './canvas.js?v=13';
+import { TextManager } from './text.js?v=13';
 
 let book = null;
 const canvasManagers = {};
