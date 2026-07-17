@@ -78,7 +78,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
@@ -421,6 +421,10 @@
             <label for="gh-book-id">檔案儲存 ID</label>
             <input type="text" id="gh-book-id" placeholder="book_data" value="book_data" required>
           </div>
+          <div class="form-group">
+            <label for="gh-password">閱讀密碼 (選填，密碼保護加密)</label>
+            <input type="password" id="gh-password" placeholder="留空代表公開，輸入密碼以進行軍規加密">
+          </div>
           
           <div class="setup-tutorial" style="margin-top: 12px; font-size: 13px;">
             <h4 style="margin-bottom: 6px; color: #e5e7eb;">💡 如何取得 GitHub Token？</h4>
@@ -536,10 +540,30 @@
     </div>
   </div>
 
+  <!-- Modal 5: E-book Password Unlock -->
+  <div id="unlock-modal" class="modal-overlay hidden" style="z-index: 99999;">
+    <div class="modal-content" style="max-width: 400px; text-align: center; padding: 30px;">
+      <div style="margin-bottom: 20px;">
+        <i data-lucide="lock" style="width: 48px; height: 48px; color: var(--color-primary); margin: 0 auto 12px; display: block;"></i>
+        <h2 style="font-family: var(--font-book); font-size: 20px; color: #e5e7eb;">電子書已被密碼保護</h2>
+        <p style="color: #9ca3af; font-size: 13px; margin-top: 8px;">請輸入密碼以解密並載入內容</p>
+      </div>
+      <form id="unlock-form">
+        <div class="form-group" style="margin-bottom: 20px;">
+          <input type="password" id="unlock-password" placeholder="請輸入閱讀密碼" style="width: 100%; text-align: center; font-size: 16px; padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none;" required>
+          <div id="unlock-error" style="color: #ef4444; font-size: 12px; margin-top: 8px;" class="hidden">密碼錯誤，請重新輸入！</div>
+        </div>
+        <div class="form-actions" style="justify-content: center; margin: 0; padding: 0;">
+          <button type="submit" class="action-btn primary" style="width: 100%; padding: 12px; justify-content: center;">解密並閱讀</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Hidden Color Picker at Body Root -->
   <input type="color" id="custom-brush-color" style="position: fixed; bottom: 0; left: 0; width: 0; height: 0; opacity: 0; pointer-events: none; z-index: -9999;">
 
   <!-- Load JS modules -->
-  <script type="module" src="app.js?v=18"></script>
+  <script type="module" src="app.js?v=19"></script>
 </body>
 </html>

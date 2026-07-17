@@ -23,8 +23,8 @@ export const db = {
   },
 
   // Save GitHub configuration
-  saveGitHubConfig(repo, branch, token, bookId) {
-    githubConfig = { repo, branch, token, bookId };
+  saveGitHubConfig(repo, branch, token, bookId, password) {
+    githubConfig = { repo, branch, token, bookId, password };
     localStorage.setItem('antigravity_github_config', JSON.stringify(githubConfig));
   },
 
@@ -130,6 +130,7 @@ export const db = {
       const numContentSheets = parseInt(localStorage.getItem('notebook_content_sheets') || '3');
       const totalPageCount = (numContentSheets + 1) * 2;
       const bookTitle = document.getElementById('page-title-1')?.value || "Jocelyn's Murmurs";
+      const password = document.getElementById('gh-password')?.value || '';
 
       // 1. Gather all pages to write into single JSON structure
       const pagesData = [];
@@ -154,7 +155,7 @@ export const db = {
         });
       }
 
-      const payload = {
+      const bookPayload = {
         bookId,
         title: bookTitle,
         totalPageCount,
@@ -162,10 +163,30 @@ export const db = {
         updatedAt: new Date().toISOString()
       };
 
-      const jsonString = JSON.stringify(payload, null, 2);
+      const jsonString = JSON.stringify(bookPayload, null, 2);
+      let payload;
+
+      if (password) {
+        progressCallback('正在為筆記進行 AES-GCM 高強度軍規加密...', 30);
+        const encryptedText = await this.encrypt(jsonString, password);
+        payload = {
+          bookId,
+          isEncrypted: true,
+          ciphertext: encryptedText,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        payload = {
+          bookId,
+          isEncrypted: false,
+          ...bookPayload
+        };
+      }
+
+      const finalJsonString = JSON.stringify(payload, null, 2);
       
       // UTF-8 base64 encoding workaround for btoa
-      const base64Content = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+      const base64Content = btoa(encodeURIComponent(finalJsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => {
         return String.fromCharCode('0x' + p1);
       }));
 
@@ -173,7 +194,7 @@ export const db = {
       const url = `https://api.github.com/repos/${repo}/contents/${path}`;
 
       // 2. Query GitHub to see if file already exists (required to get SHA for updates)
-      progressCallback('正在向 GitHub 查詢檔案庫狀態...', 40);
+      progressCallback('正在向 GitHub 查詢檔案庫狀態...', 50);
       let sha = null;
       try {
         const res = await fetch(url, {
@@ -193,7 +214,7 @@ export const db = {
       }
 
       // 3. Upload content via PUT request
-      progressCallback('正在將資料上傳提交至 GitHub...', 70);
+      progressCallback('正在將加密手稿上傳提交至 GitHub...', 80);
       const commitBody = {
         message: `Publish book ${bookId} - ${new Date().toISOString()}`,
         content: base64Content,
@@ -225,6 +246,63 @@ export const db = {
       progressCallback(`發布失敗: ${e.message}`, -1);
       throw e;
     }
+  },
+
+  // AES-GCM Encryption Helper
+  async encrypt(text, password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+    const key = await window.crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+      keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+    );
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv }, key, data
+    );
+    
+    // Combine salt, iv, and ciphertext
+    const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+    
+    // Safe array buffer to base64 conversion (handles large data)
+    let binary = '';
+    const len = combined.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    return btoa(binary);
+  },
+
+  // AES-GCM Decryption Helper
+  async decrypt(combinedBase64, password) {
+    const binary = atob(combinedBase64);
+    const combined = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      combined[i] = binary.charCodeAt(i);
+    }
+    const salt = combined.slice(0, 16);
+    const iv = combined.slice(16, 28);
+    const ciphertext = combined.slice(28);
+    
+    const encoder = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+    const key = await window.crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+      keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+    );
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv }, key, ciphertext
+    );
+    return new TextDecoder().decode(decrypted);
   },
 
   // Dummy subscription support to avoid crashes in app.js

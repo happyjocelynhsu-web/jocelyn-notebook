@@ -99,6 +99,47 @@ async function initApp() {
     document.body.classList.add('readonly-mode');
     // Preload the published book data from the server first
     window.publishedBook = await db.loadPublishedBook(bookId);
+
+    // If e-book is encrypted, show prompt and wait for decryption
+    if (window.publishedBook && window.publishedBook.isEncrypted) {
+      const unlockModal = document.getElementById('unlock-modal');
+      const unlockForm = document.getElementById('unlock-form');
+      const unlockInput = document.getElementById('unlock-password');
+      const unlockError = document.getElementById('unlock-error');
+
+      if (unlockModal && unlockForm && unlockInput) {
+        unlockModal.classList.remove('hidden');
+        if (window.lucide) window.lucide.createIcons();
+
+        unlockForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const password = unlockInput.value;
+          if (unlockError) unlockError.classList.add('hidden');
+
+          try {
+            const decryptedText = await db.decrypt(window.publishedBook.ciphertext, password);
+            const decryptedBook = JSON.parse(decryptedText);
+
+            // Successfully decrypted!
+            window.publishedBook = decryptedBook;
+            unlockModal.classList.add('hidden');
+
+            // Proceed with initialization
+            if (route.name === 'share') {
+              await renderSharedPage(route.id);
+            } else {
+              initEditor();
+            }
+          } catch (err) {
+            console.error('Decryption failed:', err);
+            if (unlockError) unlockError.classList.remove('hidden');
+            unlockInput.value = '';
+            unlockInput.focus();
+          }
+        });
+        return; // Intercept and wait for password submission
+      }
+    }
   }
   
   if (route.name === 'share') {
@@ -1500,6 +1541,7 @@ function setupDbConnectionUI() {
   const ghBranchInput = document.getElementById('gh-branch');
   const ghTokenInput = document.getElementById('gh-token');
   const ghBookIdInput = document.getElementById('gh-book-id');
+  const ghPasswordInput = document.getElementById('gh-password');
 
   const publishNowBtn = document.getElementById('publish-now-btn');
   const statusArea = document.getElementById('publish-status-area');
@@ -1521,6 +1563,7 @@ function setupDbConnectionUI() {
         if (ghBranchInput) ghBranchInput.value = cfg.branch || 'main';
         if (ghTokenInput) ghTokenInput.value = cfg.token || '';
         if (ghBookIdInput) ghBookIdInput.value = cfg.bookId || 'book_data';
+        if (ghPasswordInput) ghPasswordInput.value = cfg.password || '';
       }
     } else {
       dbStatusBtn.className = 'status-btn offline';
@@ -1531,6 +1574,7 @@ function setupDbConnectionUI() {
       if (ghBranchInput) ghBranchInput.value = 'main';
       if (ghTokenInput) ghTokenInput.value = '';
       if (ghBookIdInput) ghBookIdInput.value = 'book_data';
+      if (ghPasswordInput) ghPasswordInput.value = '';
     }
     if (window.lucide) window.lucide.createIcons();
   };
@@ -1544,8 +1588,9 @@ function setupDbConnectionUI() {
     const branch = ghBranchInput.value.trim();
     const token = ghTokenInput.value.trim();
     const bookId = ghBookIdInput.value.trim();
+    const password = ghPasswordInput ? ghPasswordInput.value : '';
 
-    db.saveGitHubConfig(repo, branch, token, bookId);
+    db.saveGitHubConfig(repo, branch, token, bookId, password);
     updateBadge();
     alert('GitHub 發布設定已儲存！');
   });
@@ -1565,6 +1610,7 @@ function setupDbConnectionUI() {
       const branch = ghBranchInput.value.trim();
       const token = ghTokenInput.value.trim();
       const bookId = ghBookIdInput.value.trim();
+      const password = ghPasswordInput ? ghPasswordInput.value : '';
 
       if (!repo || !token) {
         alert('請先輸入 GitHub 儲存庫名稱與 Token 才能進行發布！');
@@ -1572,7 +1618,7 @@ function setupDbConnectionUI() {
       }
 
       // Save current inputs automatically first
-      db.saveGitHubConfig(repo, branch, token, bookId);
+      db.saveGitHubConfig(repo, branch, token, bookId, password);
       updateBadge();
 
       // Reset progress area
