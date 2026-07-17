@@ -1664,6 +1664,110 @@ function setupDbConnectionUI() {
       }
     });
   }
+
+  // 1. Export Draft
+  const exportBtn = document.getElementById('export-draft-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      try {
+        const numContentSheets = parseInt(localStorage.getItem('notebook_content_sheets') || '3');
+        const totalPageCount = (numContentSheets + 1) * 2;
+        const pagesData = [];
+        
+        const pagesToExport = [1];
+        for (let i = 1; i <= numContentSheets; i++) {
+          pagesToExport.push(i * 2);
+          pagesToExport.push(i * 2 + 1);
+        }
+        pagesToExport.push(totalPageCount);
+        pagesToExport.push(totalPageCount + 1);
+
+        for (const pageNum of pagesToExport) {
+          const pageData = db.loadLocalPage(pageNum) || { drawings: [], texts: [], is_shared: false };
+          pagesData.push({ pageNum, data: pageData });
+        }
+
+        const backup = {
+          type: 'jocelyn_notebook_backup',
+          version: 1,
+          numContentSheets,
+          pages: pagesData,
+          exportedAt: new Date().toISOString()
+        };
+
+        const jsonString = JSON.stringify(backup, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jocelyn_notebook_draft_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 0);
+      } catch (err) {
+        console.error('Export failed:', err);
+        alert('匯出草稿失敗：' + err.message);
+      }
+    });
+  }
+
+  // 2. Import Draft
+  const importBtn = document.getElementById('import-draft-btn');
+  const importFileInput = document.getElementById('import-draft-file');
+  if (importBtn && importFileInput) {
+    importBtn.addEventListener('click', () => {
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const backup = JSON.parse(event.target.result);
+          if (backup.type !== 'jocelyn_notebook_backup') {
+            alert('錯誤：此檔案不是本系統的電子書備份檔！');
+            return;
+          }
+
+          if (!confirm('警告：匯入此備份會覆蓋您「目前 iPad 上的所有草稿內容」，此動作無法復原！確定要繼續嗎？')) {
+            importFileInput.value = '';
+            return;
+          }
+
+          // Restore Content Sheets Count
+          if (backup.numContentSheets) {
+            localStorage.setItem('notebook_content_sheets', backup.numContentSheets.toString());
+          }
+
+          // Restore Pages
+          if (backup.pages && Array.isArray(backup.pages)) {
+            for (const page of backup.pages) {
+              if (page.pageNum) {
+                db.saveLocalPage(page.pageNum, page.data || { drawings: [], texts: [], is_shared: false });
+              }
+            }
+          }
+
+          alert('草稿備份檔案匯入成功！網頁即將自動重新載入...');
+          window.location.reload();
+        } catch (err) {
+          console.error('Import failed:', err);
+          alert('匯入失敗，請確認檔案格式是否正確。');
+        } finally {
+          importFileInput.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 }
 
 /* =========================================================================

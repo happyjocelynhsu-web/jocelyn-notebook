@@ -448,6 +448,20 @@
             </div>
             <div id="publish-log" style="font-family: monospace; color: #9ca3af; font-size: 11px; max-height: 100px; overflow-y: auto; white-space: pre-wrap;"></div>
           </div>
+
+          <!-- Draft Backup and Restore Section -->
+          <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <h4 style="margin-bottom: 8px; color: #e5e7eb; font-size: 13px; display: flex; align-items: center; gap: 6px;"><i data-lucide="archive" style="width: 16px; height: 16px; color: var(--color-primary);"></i> 草稿備份與還原 (Google Drive / 檔案)</h4>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="export-draft-btn" class="action-btn secondary" style="flex: 1; justify-content: center; font-size: 12px; padding: 10px;">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i> 匯出草稿備份
+              </button>
+              <button type="button" id="import-draft-btn" class="action-btn secondary" style="flex: 1; justify-content: center; font-size: 12px; padding: 10px;">
+                <i data-lucide="upload" style="width: 14px; height: 14px;"></i> 匯入草稿檔案
+              </button>
+            </div>
+            <input type="file" id="import-draft-file" accept=".json" style="display: none;">
+          </div>
           
           <div class="form-actions" style="margin-top: 20px;">
             <button type="button" id="disconnect-db-btn" class="action-btn danger">清除設定</button>
