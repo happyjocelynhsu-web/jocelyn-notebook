@@ -93,9 +93,12 @@ async function initApp() {
   // Default to read-only mode, UNLESS ?edit=true or ?mode=edit is specified in the URL
   const urlParams = new URLSearchParams(window.location.search);
   const isEditMode = urlParams.get('edit') === 'true' || urlParams.get('mode') === 'edit';
+  const bookId = urlParams.get('book') || 'book_data';
   
   if (!isEditMode) {
     document.body.classList.add('readonly-mode');
+    // Preload the published book data from the server first
+    window.publishedBook = await db.loadPublishedBook(bookId);
   }
   
   if (route.name === 'share') {
@@ -1493,90 +1496,128 @@ function setupDbConnectionUI() {
   const form = document.getElementById('db-config-form');
   const disconnectBtn = document.getElementById('disconnect-db-btn');
   
-  const sbUrlInput = document.getElementById('sb-url');
-  const sbKeyInput = document.getElementById('sb-key');
+  const ghRepoInput = document.getElementById('gh-repo');
+  const ghBranchInput = document.getElementById('gh-branch');
+  const ghTokenInput = document.getElementById('gh-token');
+  const ghBookIdInput = document.getElementById('gh-book-id');
+
+  const publishNowBtn = document.getElementById('publish-now-btn');
+  const statusArea = document.getElementById('publish-status-area');
+  const spinner = document.getElementById('publish-spinner');
+  const stepTitle = document.getElementById('publish-step-title');
+  const progressBarInner = document.getElementById('publish-progress-inner');
+  const logContainer = document.getElementById('publish-log');
 
   const updateBadge = () => {
     const isConnected = db.isConnected();
     if (isConnected) {
       dbStatusBtn.className = 'status-btn online';
-      dbStatusBtn.innerHTML = '<i data-lucide="cloud"></i><span>雲端已同步</span>';
-      disconnectBtn.classList.remove('hidden');
+      dbStatusBtn.innerHTML = '<i data-lucide="github"></i><span>已設定 GitHub 發布</span>';
+      if (disconnectBtn) disconnectBtn.classList.remove('hidden');
       
-      // Prefill fields
       const cfg = db.getDbConfig();
       if (cfg) {
-        sbUrlInput.value = cfg.url;
-        sbKeyInput.value = cfg.key;
+        if (ghRepoInput) ghRepoInput.value = cfg.repo || '';
+        if (ghBranchInput) ghBranchInput.value = cfg.branch || 'main';
+        if (ghTokenInput) ghTokenInput.value = cfg.token || '';
+        if (ghBookIdInput) ghBookIdInput.value = cfg.bookId || 'book_data';
       }
     } else {
       dbStatusBtn.className = 'status-btn offline';
-      dbStatusBtn.innerHTML = '<i data-lucide="cloud-off"></i><span>本地儲存模式</span>';
-      disconnectBtn.classList.add('hidden');
+      dbStatusBtn.innerHTML = '<i data-lucide="github"></i><span>本機離線模式</span>';
+      if (disconnectBtn) disconnectBtn.classList.add('hidden');
       
-      sbUrlInput.value = '';
-      sbKeyInput.value = '';
+      if (ghRepoInput) ghRepoInput.value = '';
+      if (ghBranchInput) ghBranchInput.value = 'main';
+      if (ghTokenInput) ghTokenInput.value = '';
+      if (ghBookIdInput) ghBookIdInput.value = 'book_data';
     }
     if (window.lucide) window.lucide.createIcons();
   };
 
-  // Run on start
   updateBadge();
 
-  // Handle connection submit
-  form.addEventListener('submit', async (e) => {
+  // Save settings
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    
-    const url = sbUrlInput.value.trim();
-    const key = sbKeyInput.value.trim();
+    const repo = ghRepoInput.value.trim();
+    const branch = ghBranchInput.value.trim();
+    const token = ghTokenInput.value.trim();
+    const bookId = ghBookIdInput.value.trim();
 
-    const saveBtn = form.querySelector('button[type="submit"]');
-    const originalText = saveBtn.innerText;
-    saveBtn.innerText = '連接中...';
-    saveBtn.disabled = true;
-
-    try {
-      await db.connectCloud(url, key);
-      updateBadge();
-      
-      // Close modal
-      dbModal.classList.add('hidden');
-      
-      // Refresh layers with cloud content
-      await preloadPagesAndInitializeLayers();
-      
-      // Update realtime listeners for currently open sheets
-      if (book) {
-        manageRealtimeSubscriptions(book.getCurrentPages());
-      }
-      
-      alert('Supabase 雲端資料庫連接成功！資料已完成同步。');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      saveBtn.innerText = originalText;
-      saveBtn.disabled = false;
-    }
-  });
-
-  // Handle disconnect
-  disconnectBtn.addEventListener('click', () => {
-    if (!confirm('確定要斷開 Supabase 雲端連結嗎？這會讓筆記本回到本地儲存模式。')) return;
-    
-    db.disconnectCloud();
+    db.saveGitHubConfig(repo, branch, token, bookId);
     updateBadge();
-    dbModal.classList.add('hidden');
-    
-    alert('已成功中斷雲端連結。本機修改將不再同步。');
+    alert('GitHub 發布設定已儲存！');
   });
 
-  // Copy SQL tutorial code helper
-  document.getElementById('copy-sql-btn').addEventListener('click', () => {
-    const text = document.getElementById('sql-syntax').innerText;
-    navigator.clipboard.writeText(text).then(() => {
-      alert('SQL 語法已複製至剪貼簿！');
-    });
+  // Clear settings
+  disconnectBtn.addEventListener('click', () => {
+    if (!confirm('確定要清除 GitHub 連線設定嗎？')) return;
+    db.clearGitHubConfig();
+    updateBadge();
+    alert('設定已清除！已恢復本機離線狀態。');
   });
+
+  // Publish Now
+  if (publishNowBtn) {
+    publishNowBtn.addEventListener('click', async () => {
+      const repo = ghRepoInput.value.trim();
+      const branch = ghBranchInput.value.trim();
+      const token = ghTokenInput.value.trim();
+      const bookId = ghBookIdInput.value.trim();
+
+      if (!repo || !token) {
+        alert('請先輸入 GitHub 儲存庫名稱與 Token 才能進行發布！');
+        return;
+      }
+
+      // Save current inputs automatically first
+      db.saveGitHubConfig(repo, branch, token, bookId);
+      updateBadge();
+
+      // Reset progress area
+      if (statusArea) statusArea.classList.remove('hidden');
+      if (spinner) spinner.style.display = 'inline-block';
+      if (progressBarInner) progressBarInner.style.width = '0%';
+      if (logContainer) logContainer.innerText = '';
+
+      const progressCallback = (msg, percent) => {
+        if (logContainer) {
+          logContainer.innerText += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+          logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        if (percent === -1) {
+          if (spinner) spinner.style.display = 'none';
+          if (stepTitle) stepTitle.innerText = '發布出錯！';
+          if (progressBarInner) {
+            progressBarInner.style.width = '100%';
+            progressBarInner.style.backgroundColor = '#ef4444';
+          }
+        } else if (percent === 100) {
+          if (spinner) spinner.style.display = 'none';
+          if (stepTitle) stepTitle.innerText = '發布完成！';
+          if (progressBarInner) {
+            progressBarInner.style.width = '100%';
+            progressBarInner.style.backgroundColor = '#10b981';
+          }
+          alert('電子書已成功發布至 GitHub！\n前台網頁即將自動更新。');
+        } else {
+          if (stepTitle) stepTitle.innerText = msg;
+          if (progressBarInner) {
+            progressBarInner.style.width = `${percent}%`;
+            progressBarInner.style.backgroundColor = 'var(--color-primary)';
+          }
+        }
+      };
+
+      try {
+        await db.publishToGitHub(repo, branch, token, bookId, progressCallback);
+      } catch (err) {
+        console.error('Publish error:', err);
+      }
+    });
+  }
 }
 
 /* =========================================================================

@@ -1,272 +1,109 @@
-// db.js - Database & Sync Module
+// db.js - Database & Sync Module (GitHub Serverless Publisher & Local Storage Version)
 
-let supabase = null;
-let dbConfig = null;
-let realtimeSubscription = null;
-let onUpdateCallback = null;
+let githubConfig = null;
 
 // Read config from LocalStorage on load
 try {
-  const savedConfig = localStorage.getItem('antigravity_db_config');
+  const savedConfig = localStorage.getItem('antigravity_github_config');
   if (savedConfig) {
-    dbConfig = JSON.parse(savedConfig);
-    initSupabase(dbConfig.url, dbConfig.key);
+    githubConfig = JSON.parse(savedConfig);
   }
 } catch (e) {
-  console.error('Failed to load DB config from localStorage', e);
-}
-
-function initSupabase(url, key) {
-  try {
-    if (window.supabase) {
-      supabase = window.supabase.createClient(url, key);
-      dbConfig = { url, key };
-      return true;
-    }
-  } catch (e) {
-    console.error('Supabase initialization failed', e);
-  }
-  return false;
+  console.error('Failed to load GitHub config from localStorage', e);
 }
 
 export const db = {
-  // Check if cloud sync is connected
+  // Check if connected (GitHub config is configured)
   isConnected() {
-    return supabase !== null;
+    return githubConfig !== null && githubConfig.token !== '';
   },
 
   getDbConfig() {
-    return dbConfig;
+    return githubConfig;
   },
 
-  // Save config and connect
-  async connectCloud(url, key) {
-    const success = initSupabase(url, key);
-    if (!success) throw new Error('無法載入 Supabase SDK。請檢查網路或 CDN。');
-
-    // Test connection by fetching a row (or simple check)
-    const { data, error } = await supabase
-      .from('notebook_pages')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-      supabase = null;
-      throw new Error(`資料庫連接失敗: ${error.message}。請確認資料表 notebook_pages 是否已正確建立。`);
-    }
-
-    // Save to localStorage if successful
-    localStorage.setItem('antigravity_db_config', JSON.stringify({ url, key }));
-    
-    // Sync local storage content to cloud (upward sync)
-    await this.syncLocalToCloud();
-    return true;
+  // Save GitHub configuration
+  saveGitHubConfig(repo, branch, token, bookId) {
+    githubConfig = { repo, branch, token, bookId };
+    localStorage.setItem('antigravity_github_config', JSON.stringify(githubConfig));
   },
 
-  // Disconnect cloud sync
-  disconnectCloud() {
-    supabase = null;
-    dbConfig = null;
-    localStorage.removeItem('antigravity_db_config');
-    if (realtimeSubscription) {
-      realtimeSubscription.unsubscribe();
-      realtimeSubscription = null;
-    }
+  // Clear GitHub configuration
+  clearGitHubConfig() {
+    githubConfig = null;
+    localStorage.removeItem('antigravity_github_config');
   },
 
-  // Sync all LocalStorage data to cloud on first connection
-  async syncLocalToCloud() {
-    if (!supabase) return;
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith('antigravity_page_')) {
-        const pageNum = parseInt(key.replace('antigravity_page_', ''), 10);
-        if (!isNaN(pageNum)) {
-          const localData = JSON.parse(localStorage.getItem(key));
-          const pageId = `page_${pageNum}`;
-          
-          await supabase.from('notebook_pages').upsert({
-            id: pageId,
-            page_num: pageNum,
-            drawings: localData.drawings || [],
-            texts: localData.texts || [],
-            is_shared: localData.is_shared || false,
-            updated_at: new Date().toISOString()
-          });
-        }
-      }
-    }
-  },
-
-  // Load a page's data (drawings, texts, is_shared)
-  async loadPage(pageNum) {
-    const pageId = `page_${pageNum}`;
-
-    // Try cloud first if connected
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('notebook_pages')
-          .select('*')
-          .eq('id', pageId)
-          .single();
-
-        if (error) {
-          // If not found in database, insert initial page
-          if (error.code === 'PGRST116') { // PGRST116 is code for "0 rows returned"
-            const initialData = this.loadLocalPage(pageNum) || { drawings: [], texts: [], is_shared: false };
-            await supabase.from('notebook_pages').insert({
-              id: pageId,
-              page_num: pageNum,
-              drawings: initialData.drawings,
-              texts: initialData.texts,
-              is_shared: initialData.is_shared,
-              updated_at: new Date().toISOString()
-            });
-            return initialData;
-          }
-          throw error;
-        }
-
-        // Save local copy as backup
-        this.saveLocalPage(pageNum, data);
-        return data;
-      } catch (e) {
-        console.warn('雲端載入失敗，改用本地快取數據:', e);
-      }
-    }
-
-    // Fallback to LocalStorage
-    return this.loadLocalPage(pageNum) || { drawings: [], texts: [], is_shared: false };
-  },
-
-  // Load specifically for shared read-only page
-  async loadSharedPage(pageId) {
-    if (!supabase) {
-      // LocalStorage share demo fallback
-      const match = pageId.match(/^page_(\d+)$/);
-      if (match) {
-        const pageNum = parseInt(match[1], 10);
-        const data = this.loadLocalPage(pageNum);
-        if (data && data.is_shared) {
-          return data;
-        }
-      }
-      return null;
-    }
-
+  // Fetch the published book data from the server
+  async loadPublishedBook(bookId) {
     try {
-      const { data, error } = await supabase
-        .from('notebook_pages')
-        .select('*')
-        .eq('id', pageId)
-        .single();
-      
-      if (error) throw error;
-      if (data && data.is_shared) {
-        return data;
+      const res = await fetch(`./data/${bookId}.json?t=${Date.now()}`);
+      if (res.ok) {
+        return await res.json();
       }
     } catch (e) {
-      console.error('Failed to load shared page:', e);
+      console.warn(`Failed to load published book ${bookId}:`, e);
     }
     return null;
   },
 
-  // Save a page's content
-  async savePage(pageNum, drawings, texts) {
-    const pageId = `page_${pageNum}`;
-    const pageData = { drawings, texts };
-
-    // 1. Save to local storage first (always, for fast response & offline durability)
-    const localCurrent = this.loadLocalPage(pageNum) || { is_shared: false };
-    const mergedData = { ...localCurrent, ...pageData };
-    this.saveLocalPage(pageNum, mergedData);
-
-    // 2. Sync to cloud if connected
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('notebook_pages')
-          .upsert({
-            id: pageId,
-            page_num: pageNum,
-            drawings: mergedData.drawings,
-            texts: mergedData.texts,
-            is_shared: mergedData.is_shared,
-            updated_at: new Date().toISOString()
-          });
-
-        if (error) throw error;
-      } catch (e) {
-        console.error('雲端自動存檔失敗，已暫存於本地:', e);
+  // Load a page's data (drawings, texts, is_shared)
+  async loadPage(pageNum) {
+    const isEdit = new URLSearchParams(window.location.search).get('edit') === 'true';
+    if (!isEdit) {
+      // Reader mode: use the preloaded published book JSON
+      if (window.publishedBook && window.publishedBook.pages) {
+        const page = window.publishedBook.pages.find(p => p.pageNum === pageNum);
+        if (page) {
+          return {
+            drawings: page.drawings || [],
+            texts: page.texts || [],
+            is_shared: page.is_shared || false
+          };
+        }
       }
     }
+
+    // Fallback to LocalStorage for Edit mode or if published file is not loaded
+    return this.loadLocalPage(pageNum) || { drawings: [], texts: [], is_shared: false };
   },
 
-  // Toggle page sharing status
+  // Dummy method to support shared page links if they visit it
+  async loadSharedPage(pageId) {
+    const match = pageId.match(/^page_(\d+)$/);
+    if (match) {
+      const pageNum = parseInt(match[1], 10);
+      const data = await this.loadPage(pageNum);
+      if (data && data.is_shared) {
+        return data;
+      }
+    }
+    return null;
+  },
+
+  // Save a page's content locally
+  async savePage(pageNum, drawings, texts) {
+    const localCurrent = this.loadLocalPage(pageNum) || { is_shared: false };
+    const mergedData = { ...localCurrent, drawings, texts };
+    this.saveLocalPage(pageNum, mergedData);
+  },
+
+  // Toggle page sharing status locally
   async toggleShare(pageNum, isShared) {
-    const pageId = `page_${pageNum}`;
-    
-    // Save locally
     const localCurrent = this.loadLocalPage(pageNum) || { drawings: [], texts: [] };
     localCurrent.is_shared = isShared;
     this.saveLocalPage(pageNum, localCurrent);
-
-    // Save cloud
-    if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('notebook_pages')
-          .update({ is_shared: isShared, updated_at: new Date().toISOString() })
-          .eq('id', pageId);
-
-        if (error) throw error;
-      } catch (e) {
-        console.error('雲端分享設定更新失敗:', e);
-        throw e;
-      }
-    }
     return isShared;
   },
 
-  // Upload image/video to Supabase Storage (fallback to local base64 if bucket doesn't exist)
+  // Convert uploaded image/video file to Base64 (Serverless storage)
   async uploadMedia(file) {
-    if (!supabase) return null;
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `notebook_uploads/${fileName}`;
-
-      // Upload file to bucket 'notebook_media'
-      const { data, error } = await supabase.storage
-        .from('notebook_media')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        // If error is bucket not found, log warning and return null
-        if (error.message.toLowerCase().includes('bucket') || error.message.toLowerCase().includes('does not exist')) {
-          console.warn('Supabase Storage bucket "notebook_media" not found. Falling back to local Base64.');
-          return null;
-        }
-        throw error;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('notebook_media')
-        .getPublicUrl(filePath);
-
-      return urlData.publicUrl;
-    } catch (e) {
-      console.warn('Supabase Storage upload failed, falling back to Base64:', e);
-      return null;
-    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   },
 
   // Local storage helpers
@@ -284,43 +121,113 @@ export const db = {
     }
   },
 
-  // Realtime subscription setup
-  subscribeRealtime(pageNum, onUpdate) {
-    if (!supabase) return;
-    
-    if (realtimeSubscription) {
-      realtimeSubscription.unsubscribe();
-    }
+  // Publish book data to GitHub via REST API
+  async publishToGitHub(repo, branch, token, bookId, progressCallback) {
+    if (!progressCallback) progressCallback = () => {};
 
-    const pageId = `page_${pageNum}`;
-    onUpdateCallback = onUpdate;
+    try {
+      progressCallback('正在打包手稿資料...', 10);
+      const numContentSheets = parseInt(localStorage.getItem('notebook_content_sheets') || '3');
+      const totalPageCount = (numContentSheets + 1) * 2;
+      const bookTitle = document.getElementById('page-title-1')?.value || "Jocelyn's Murmurs";
 
-    realtimeSubscription = supabase
-      .channel(`page_changes_${pageNum}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notebook_pages',
-          filter: `id=eq.${pageId}`
-        },
-        (payload) => {
-          if (payload.new && onUpdateCallback) {
-            // Save local cache backup
-            this.saveLocalPage(pageNum, payload.new);
-            onUpdateCallback(payload.new);
+      // 1. Gather all pages to write into single JSON structure
+      const pagesData = [];
+      const pagesToExport = [1];
+      for (let i = 1; i <= numContentSheets; i++) {
+        pagesToExport.push(i * 2);
+        pagesToExport.push(i * 2 + 1);
+      }
+      pagesToExport.push(totalPageCount);
+      pagesToExport.push(totalPageCount + 1);
+
+      for (const pageNum of pagesToExport) {
+        const pageData = this.loadLocalPage(pageNum) || { drawings: [], texts: [], is_shared: false };
+        const titleInput = document.getElementById(`page-title-${pageNum}`);
+        const pageTitle = titleInput ? titleInput.value : '';
+        pagesData.push({
+          pageNum,
+          title: pageTitle,
+          drawings: pageData.drawings || [],
+          texts: pageData.texts || [],
+          is_shared: pageData.is_shared || false
+        });
+      }
+
+      const payload = {
+        bookId,
+        title: bookTitle,
+        totalPageCount,
+        pages: pagesData,
+        updatedAt: new Date().toISOString()
+      };
+
+      const jsonString = JSON.stringify(payload, null, 2);
+      
+      // UTF-8 base64 encoding workaround for btoa
+      const base64Content = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode('0x' + p1);
+      }));
+
+      const path = `data/${bookId}.json`;
+      const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+
+      // 2. Query GitHub to see if file already exists (required to get SHA for updates)
+      progressCallback('正在向 GitHub 查詢檔案庫狀態...', 40);
+      let sha = null;
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Cache-Control': 'no-cache'
           }
+        });
+        if (res.status === 200) {
+          const fileInfo = await res.json();
+          sha = fileInfo.sha;
         }
-      )
-      .subscribe();
+      } catch (e) {
+        console.warn('Failed to query file SHA, will attempt create:', e);
+      }
+
+      // 3. Upload content via PUT request
+      progressCallback('正在將資料上傳提交至 GitHub...', 70);
+      const commitBody = {
+        message: `Publish book ${bookId} - ${new Date().toISOString()}`,
+        content: base64Content,
+        branch: branch
+      };
+      if (sha) {
+        commitBody.sha = sha;
+      }
+
+      const uploadRes = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(commitBody)
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        throw new Error(`GitHub API 回傳錯誤: ${uploadRes.status} ${errorText}`);
+      }
+
+      progressCallback('發布完成！GitHub Pages 將在 1 分鐘內完成靜態網頁更新！', 100);
+      return true;
+    } catch (e) {
+      console.error('GitHub publishing failed:', e);
+      progressCallback(`發布失敗: ${e.message}`, -1);
+      throw e;
+    }
   },
 
-  unsubscribeRealtime() {
-    if (realtimeSubscription) {
-      realtimeSubscription.unsubscribe();
-      realtimeSubscription = null;
-    }
-    onUpdateCallback = null;
-  }
+  // Dummy subscription support to avoid crashes in app.js
+  subscribeRealtime(pageNum, onUpdate) {},
+  unsubscribeRealtime() {}
 };

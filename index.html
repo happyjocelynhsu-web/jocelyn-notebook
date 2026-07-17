@@ -5,8 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Notebook</title>
   
+  <link rel="manifest" href="manifest.json">
+  <!-- PWA iOS Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jocelyn Note">
+  <link rel="apple-touch-icon" href="cute_spring_cover_front.jpg">
+
   <!-- Global error catcher for debugging -->
   <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('ServiceWorker registered successfully', reg.scope);
+        }).catch((err) => {
+          console.warn('ServiceWorker registration failed', err);
+        });
+      });
+    }
+
     window.addEventListener('error', function(e) {
       const errDiv = document.createElement('div');
       errDiv.style.position = 'fixed';
@@ -377,56 +394,63 @@
     </section>
   </main>
 
-  <!-- Modal 1: Supabase Configuration -->
+  <!-- Modal 1: GitHub Publishing Configuration -->
   <div id="db-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h2><i data-lucide="database"></i> 連接 Supabase 雲端同步</h2>
+        <h2><i data-lucide="github"></i> 發布電子書至 GitHub</h2>
         <button class="close-modal-btn" data-close="db-modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p>串接您的 Supabase 資料庫後，您就可以在電腦與 iPad 之間即時同步所有的手繪與文字！</p>
+        <p>配置您的 GitHub 帳戶與 Token 資訊，即可在 iPad 上一鍵將本機草稿發布至 GitHub 儲存庫，前台網頁會即時更新！</p>
         
         <form id="db-config-form">
           <div class="form-group">
-            <label for="sb-url">Supabase Project URL</label>
-            <input type="url" id="sb-url" placeholder="https://xxxxxxxxx.supabase.co" required>
+            <label for="gh-repo">GitHub 儲存庫 (Repository)</label>
+            <input type="text" id="gh-repo" placeholder="例如: 帳號/專案名稱 (happyjocelynhsu/jocelyn-notebook)" required>
           </div>
           <div class="form-group">
-            <label for="sb-key">Supabase Anon Key</label>
-            <input type="password" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+            <label for="gh-branch">分支名稱 (Branch)</label>
+            <input type="text" id="gh-branch" placeholder="main" value="main" required>
+          </div>
+          <div class="form-group">
+            <label for="gh-token">個人存取 Token (PAT)</label>
+            <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" required>
+          </div>
+          <div class="form-group">
+            <label for="gh-book-id">檔案儲存 ID</label>
+            <input type="text" id="gh-book-id" placeholder="book_data" value="book_data" required>
           </div>
           
-          <div class="setup-tutorial">
-            <h4>💡 如何取得？</h4>
-            <ol>
-              <li>登入 <a href="https://supabase.com" target="_blank" rel="noopener">Supabase 官網</a> 並建立一個新專案。</li>
-              <li>在專案的 <strong>Project Settings > API</strong> 頁面找到 <code>Project URL</code> 與 <code>anon public</code> Key。</li>
-              <li>在專案的 <strong>SQL Editor</strong> 貼入以下 SQL 碼來建立資料表（點擊下方按鈕可複製 SQL）：</li>
+          <div class="setup-tutorial" style="margin-top: 12px; font-size: 13px;">
+            <h4 style="margin-bottom: 6px; color: #e5e7eb;">💡 如何取得 GitHub Token？</h4>
+            <ol style="padding-left: 18px; line-height: 1.6; color: #9ca3af;">
+              <li>登入 GitHub 官網，進入 <strong>Settings > Developer Settings > Personal Access Tokens</strong>。</li>
+              <li>點擊 <strong>Fine-grained tokens > Generate new token</strong>。</li>
+              <li>填寫名稱，並在 <strong>Repository access</strong> 選擇對應的專案。</li>
+              <li>在 <strong>Permissions</strong> 中，設定 <strong>Contents</strong> 權限為 <strong>Read and Write</strong>。</li>
+              <li>生成後複製 Token 貼到上方輸入框。Token 僅存放在您的本機瀏覽器。</li>
             </ol>
-            <div class="sql-code-block">
-              <pre id="sql-syntax">CREATE TABLE IF NOT EXISTS notebook_pages (
-  id TEXT PRIMARY KEY,
-  page_num INTEGER NOT NULL,
-  drawings JSONB DEFAULT '[]'::jsonb,
-  texts JSONB DEFAULT '[]'::jsonb,
-  is_shared BOOLEAN DEFAULT false,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
+          </div>
 
--- 啟用即時同步 (Realtime)
-alter publication supabase_realtime add table notebook_pages;</pre>
-              <button type="button" id="copy-sql-btn" class="action-btn secondary btn-sm">
-                <i data-lucide="copy"></i> 複製 SQL 語法
-              </button>
+          <!-- Publish Progress Indicator -->
+          <div id="publish-status-area" class="publish-status-area hidden" style="margin-top: 16px; padding: 12px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 13px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span class="spinner" id="publish-spinner" style="width: 16px; height: 16px; border: 2px solid #8b5cf6; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></span>
+              <strong id="publish-step-title">正在發布...</strong>
             </div>
+            <div id="publish-progress-bar" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+              <div id="publish-progress-inner" style="width: 0%; height: 100%; background: var(--color-primary); transition: width 0.3s ease;"></div>
+            </div>
+            <div id="publish-log" style="font-family: monospace; color: #9ca3af; font-size: 11px; max-height: 100px; overflow-y: auto; white-space: pre-wrap;"></div>
           </div>
           
-          <div class="form-actions">
-            <button type="button" id="disconnect-db-btn" class="action-btn danger hidden">斷開雲端連接</button>
+          <div class="form-actions" style="margin-top: 20px;">
+            <button type="button" id="disconnect-db-btn" class="action-btn danger">清除設定</button>
             <div class="flex-spacer"></div>
-            <button type="button" class="action-btn secondary" data-close="db-modal">取消</button>
-            <button type="submit" class="action-btn primary">儲存並連接</button>
+            <button type="button" class="action-btn secondary" data-close="db-modal">關閉</button>
+            <button type="submit" id="save-config-btn" class="action-btn secondary" style="margin-right: 8px;">儲存設定</button>
+            <button type="button" id="publish-now-btn" class="action-btn primary">立即發布</button>
           </div>
         </form>
       </div>
