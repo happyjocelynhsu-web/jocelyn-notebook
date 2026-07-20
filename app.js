@@ -80,6 +80,8 @@ function updateEditablePagesList() {
     EDITABLE_PAGES.push(i * 2);
     EDITABLE_PAGES.push(i * 2 + 1);
   }
+  // Include Page 8 (endPageNum) as an editable content page!
+  EDITABLE_PAGES.push((numContentSheets + 1) * 2);
 }
 updateEditablePagesList();
 
@@ -418,7 +420,7 @@ async function initEditor() {
 
     // 3. End page
     const endPage = (book.totalContentSheets + 1) * 2;
-    tocGrid.appendChild(createTOCCard(endPage, `第 ${endPage} 頁 (尾聲)`, 'end'));
+    tocGrid.appendChild(createTOCCard(endPage, `第 ${endPage} 頁`, 'content'));
 
     // 4. Backcover
     const backCoverPage = endPage + 1;

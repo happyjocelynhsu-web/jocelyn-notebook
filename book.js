@@ -75,17 +75,19 @@ export class Book {
     const backCoverPageNum = endPageNum + 1;
 
     this.createSheet(endSheetIdx, `
-      <div class="page front">
+      <div class="page front" data-page-num="${endPageNum}">
         <div class="paper-inner">
-          <div class="page-header"><span>尾聲</span><span>Page ${endPageNum}</span></div>
-          <div class="page-body-container" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 80%;">
-            <i data-lucide="book-check" style="width: 48px; height: 48px; color: var(--color-primary); margin-bottom: 16px;"></i>
-            <h2 style="font-family: var(--font-book); margin-bottom: 12px; font-size: 22px;">筆記結束</h2>
-            <p style="color: #555; font-size: 14px; max-width: 280px; line-height: 1.6;">
-              本頁為最後一頁。您可以點擊右上角分享特定頁面，或連接 Supabase 將筆記即時儲存至雲端。
-            </p>
+          <div class="page-header" style="height: 24px; border: none; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 10;">
+            <input type="text" class="page-title-input" id="page-title-${endPageNum}" placeholder="（未命名章節）" style="width: 80%; border: none; background: transparent; text-align: center; font-size: 13px; font-weight: 600; color: #555; outline: none; font-family: var(--font-book); border-bottom: 1px dashed transparent; transition: border-color 0.2s ease; padding: 2px 0;" data-page-num="${endPageNum}">
           </div>
-          <div class="page-footer">反重力翻書筆記本</div>
+          <div class="page-body-container" id="page-body-${endPageNum}">
+            <!-- Layers -->
+            <div class="text-layer" id="text-layer-${endPageNum}"></div>
+            <canvas class="drawing-canvas" id="canvas-${endPageNum}"></canvas>
+          </div>
+          <div class="page-footer" style="position: absolute; bottom: 12px; right: 16px; font-size: 11px; color: #9ca3af; font-family: var(--font-ui); font-weight: 500; border: none; margin: 0; padding: 0; text-align: right; z-index: 5;">
+            ${endPageNum}
+          </div>
         </div>
       </div>
       <div class="page back cover-back" data-page-num="${backCoverPageNum}">
