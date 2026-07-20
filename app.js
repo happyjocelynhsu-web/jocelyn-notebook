@@ -261,9 +261,11 @@ async function initEditor() {
   setupModal('help-btn', 'help-modal');
   setupModal('db-status-btn', 'db-modal');
   
-  // Show guide modal on first visit
-  if (!localStorage.getItem('antigravity_visited')) {
-    document.getElementById('help-modal').classList.remove('hidden');
+  // Show guide modal on first visit (only in edit mode for creator)
+  const isReadOnly = document.body.classList.contains('readonly-mode');
+  if (!isReadOnly && !localStorage.getItem('antigravity_visited')) {
+    const helpModal = document.getElementById('help-modal');
+    if (helpModal) helpModal.classList.remove('hidden');
     localStorage.setItem('antigravity_visited', 'true');
   }
 
